@@ -5,13 +5,12 @@ var morgan = require("morgan");
 
 var index = require("./routes/index");
 var rideshare = require("./routes/rideshare");
+var config = require('./config');
 
 var app = express();
 
-var port = 3000;
-
-app.listen(port, function () {
-    console.log("Server running on port", port);
+app.listen(config.port, function () {
+    console.log("Server running on port", config.port);
 });
 
 //views

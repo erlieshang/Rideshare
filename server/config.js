@@ -3,6 +3,7 @@ var nodemailer = require("nodemailer");
 module.exports = {
     'secret': 'rideshareapp',
     'database': 'mongodb://eshang:1234@ds149134.mlab.com:49134/rideshare',
+    'port': process.env.PORT || 3000,
     'transporter': nodemailer.createTransport({
         service: 'gmail',
         auth: {

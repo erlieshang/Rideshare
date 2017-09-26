@@ -11,7 +11,7 @@ var router = express.Router();
 var transporter = config.transporter;
 mongoose.connect(config.database);
 
-router.post("/get_email_code", function (req, res, next) {
+router.post("/get_email_code", function (req, res) {
     var data = req.body;
     if (!data.email) {
         res.status(400);
