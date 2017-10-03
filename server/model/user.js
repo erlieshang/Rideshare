@@ -1,7 +1,30 @@
 var mongoose = require("mongoose");
+var Schema = mongoose.Schema;
 
-module.exports = mongoose.model('User', new mongoose.Schema({
-    name: String,
-    password: String,
-    admin: Boolean
-}));
+var commentSchema = new Schema({
+    from: {type: Schema.Types.ObjectId, required: true},
+    content: String,
+    date: {type: Date, default: Date.now },
+    rate: Number
+});
+
+var userSchema = new Schema({
+    firstName: String,
+    lastName: String,
+    email: {type: String, lowercase: true, required: true},
+    number: String,
+    admin: {type: Boolean, default: false},
+    password: {type: String, required: true},
+    score: {type: Number, default: 10},
+    verified: {type: Boolean, default: false},
+    verifyCode: Number,
+    gender: Boolean, //true for male, false for female
+    driverPermission: {type: Boolean, default: false},
+    driversLicense: {type: String, default: ''},
+    vehiclePlate: {type: String, default: ''},
+    comments: [commentSchema]
+    }, {
+        runSettersOnQuery: true
+    });
+
+module.exports = mongoose.model('User', userSchema);

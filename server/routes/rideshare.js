@@ -1,78 +1,134 @@
 var express = require("express");
-var mongojs = require("mongojs");
 var mongoose = require("mongoose");
 var jwt = require("jsonwebtoken");
+var bcrypt = require('bcryptjs');
+var multer = require('multer');
+var fs = require('fs');
+var grid = require('gridfs-stream');
+
 var config = require("../config");
+var error = require('../error');
 var User = require("../model/user");
 
 var router = express.Router();
-
-// var db = mongojs(config.database);
+var upload = multer({ dest: './uploads/'});
 var transporter = config.transporter;
-mongoose.connect(config.database);
 
-router.post("/get_email_code", function (req, res) {
-    var data = req.body;
-    if (!data.email) {
-        res.status(400);
-        res.json({
-            "error":"No email address!"
-        });
-    }
+mongoose.connect(config.database);
+grid.mongo = mongoose.mongo;
+
+router.post('/upload_avatar', upload.single('avatar'), function (req, res) {
+    var readStream = fs.createReadStream(req.file.path);
+    var gfs = grid(mongoose.connection.db);
+    var writeStream = gfs.createWriteStream({ filename: req.file.filename});
+    readStream.pipe(writeStream);
+    res.json({
+        'code': error.no_error
+    });
+});
+
+router.post('/register', function (req, res) {
+    if (!req.body.email || !req.body.password)
+        res.json({'success': false, 'code': error.key_information_missing});
     else {
+        var verification_code = Math.ceil(Math.random() * 999999);
+        var newUser = new User({
+            firstName: req.body.firstName || 'none',
+            lastName: req.body.lastName || 'none',
+            email: req.body.email,
+            number: req.body.number || 'none',
+            password: bcrypt.hashSync(req.body.password),
+            verifyCode: verification_code,
+            gender: req.body.gender || true
+        });
+        newUser.save(function (err) {
+            if (err) res.send(err);
+        });
+        //sending verification code
         var opts = config.email_content;
-        opts.to = data.email;
-        opts.text += '123456';
-        transporter.sendMail(opts, function(error, info){
-            if (error) {
-                res.send(error);
+        opts.to = req.body.email;
+        opts.text += String(verification_code);
+        transporter.sendMail(opts, function (err, info) {
+            if (err) {
+                res.send(err);
             } else {
-                res.send(info);
+                res.json({
+                    'info': info,
+                    'code': error.no_error
+                })
             }
         });
     }
 });
 
-router.get('/setup', function (req, res) {
-    var nick = new User({
-        name: 'admin',
-        password: 'admin',
-        admin: true
-    });
-    nick.save(function (err) {
-        if (err) throw err;
-        res.json({'success':true});
-    });
+router.post('/verify', function (req, res) {
+    if (!req.body.email || !req.body.code)
+        res.json({'success': false, 'code': error.key_information_missing});
+    else {
+        var query = User.where({email: req.body.email});
+        query.findOne(function (err, user) {
+            if (err) throw err;
+            if (!user) {
+                res.json({
+                    'success': false,
+                    'code': error.user_not_found
+                });
+            }
+            else if (user.verifyCode != Number(req.body.code)) {
+                res.json({
+                    'success': false,
+                    'code': error.wrong_verification_code
+                });
+            }
+            else {
+                user.verified = true;
+                user.save(function (err, updated) {
+                    if (err) throw err;
+                    res.json({
+                        'success': true,
+                        'code': error.no_error,
+                        'info': updated
+                    });
+                });
+            }
+        });
+    }
 });
 
 router.post('/get_token', function (req, res) {
     User.findOne({
-        name: req.body.name
+        email: req.body.email
     }, function (err, user) {
         if (err) throw err;
         if (!user) {
             res.json({
                 'success': false,
-                'message': 'User not found'
+                'code': error.user_not_found
+            });
+        }
+        else if (!user.verified) {
+            res.json({
+                'success': false,
+                'code': error.user_not_verified
             });
         }
         else {
-            if (user.password != req.body.password) {
+            if (!bcrypt.compareSync(String(req.body.password), user.password)) {
                 res.json({
                     'success': false,
-                    'message': 'Wrong password'
+                    'code': error.wrong_password
                 });
             }
             else {
                 var token = jwt.sign({
                     id: user._id,
-                    name: user.name
+                    email: user.email
                 }, config.secret, {
-                    expiresIn: '1y'
+                    expiresIn: '1m'
                 });
                 res.json({
                     'success': true,
-                    'message': 'Authenticate succeed!',
+                    'code': error.no_error,
                     'token': token
                 });
             }
@@ -88,7 +144,7 @@ router.use(function(req, res, next) {
     if (token) {
         jwt.verify(token, config.secret, function(err, decoded) {
             if (err) {
-                return res.json({ success: false, message: 'Failed to authenticate token.' });
+                return res.json({ 'success': false, 'code': error.authentication_failed });
             } else {
                 // if everything is good, save to request for use in other routes
                 req.decoded = decoded;
@@ -97,12 +153,38 @@ router.use(function(req, res, next) {
         });
     }
     else {
-        return res.status(403).send({
-            success: false,
-            message: 'No token provided.'
+        return res.status(403).json({
+            'success': false,
+            'code': error.no_token_provided
         });
     }
 });
+
+router.post('/apply_for_driver_permission', function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        if (!req.body.driversLicense || !req.body.vehiclePlate)
+            res.json({
+                'success': false,
+                'code': error.key_information_missing
+            });
+        else {
+            user.driversLicense = req.body.driversLicense;
+            user.vehiclePlate = req.body.vehiclePlate;
+            user.driverPermission = true;
+            user.save(function (err, updated) {
+                if (err) throw err;
+                res.json({
+                    'success': true,
+                    'code': error.no_error,
+                    'info': updated
+                });
+            });
+        }
+    });
+});
+
+
 
 router.get("/users", function (req, res) {
     User.find({}, function (err, users) {
@@ -110,24 +192,5 @@ router.get("/users", function (req, res) {
         res.json(users);
     });
 });
-//
-// router.post("/rideshare", function (req, res, next) {
-//     var info = req.body;
-//     console.log(info);
-//     if (!info.name) {
-//         res.status(400);
-//         res.json({
-//             error:"Bad data"
-//         });
-//     }
-//     else {
-//         db.users.save(info, function (err, saved) {
-//             if (err) {
-//                 res.send(err);
-//             }
-//             res.json(saved);
-//         })
-//     }
-// });
 
 module.exports = router;
