@@ -13,6 +13,7 @@ var userSchema = new Schema({
     lastName: String,
     email: {type: String, lowercase: true, required: true},
     number: String,
+    avatar: Schema.Types.ObjectId,
     admin: {type: Boolean, default: false},
     password: {type: String, required: true},
     score: {type: Number, default: 10},

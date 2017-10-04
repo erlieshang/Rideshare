@@ -6,5 +6,7 @@ module.exports = {
     'key_information_missing': 4,
     'authentication_failed': 5,
     'wrong_verification_code': 6,
-    'no_token_provided': 7
+    'no_token_provided': 7,
+    'file_not_found': 8,
+    'upload_failed': 9
 };

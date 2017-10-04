@@ -4,7 +4,7 @@ var bodyParser = require("body-parser");
 var morgan = require("morgan");
 
 var index = require("./routes/index");
-var rideshare = require("./routes/rideshare");
+var user_api = require('./routes/user_api');
 var config = require('./config');
 
 var app = express();
@@ -28,4 +28,4 @@ app.use(morgan('dev'));
 //Routes
 
 app.use("/", index);
-app.use("/api", rideshare);
+app.use("/api/user", user_api);

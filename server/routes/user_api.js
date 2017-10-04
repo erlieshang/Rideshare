@@ -9,23 +9,14 @@ var grid = require('gridfs-stream');
 var config = require("../config");
 var error = require('../error');
 var User = require("../model/user");
+var auth = require('./authenticate');
 
 var router = express.Router();
-var upload = multer({ dest: './uploads/'});
+var upload = multer({dest: './uploads/'});
 var transporter = config.transporter;
 
 mongoose.connect(config.database);
 grid.mongo = mongoose.mongo;
-
-router.post('/upload_avatar', upload.single('avatar'), function (req, res) {
-    var readStream = fs.createReadStream(req.file.path);
-    var gfs = grid(mongoose.connection.db);
-    var writeStream = gfs.createWriteStream({ filename: req.file.filename});
-    readStream.pipe(writeStream);
-    res.json({
-        'code': error.no_error
-    });
-});
 
 router.post('/register', function (req, res) {
     if (!req.body.email || !req.body.password)
@@ -124,7 +115,7 @@ router.post('/get_token', function (req, res) {
                     id: user._id,
                     email: user.email
                 }, config.secret, {
-                    expiresIn: '1m'
+                    expiresIn: '1y'
                 });
                 res.json({
                     'success': true,
@@ -136,28 +127,78 @@ router.post('/get_token', function (req, res) {
     });
 });
 
-router.use(function(req, res, next) {
-    // check header or url parameters or post parameters for token
-    var token = req.body.token || req.param('token') || req.headers['x-access-token'];
+router.use(auth);
 
-    // decode token
-    if (token) {
-        jwt.verify(token, config.secret, function(err, decoded) {
-            if (err) {
-                return res.json({ 'success': false, 'code': error.authentication_failed });
-            } else {
-                // if everything is good, save to request for use in other routes
-                req.decoded = decoded;
-                next();
+router.post('/upload_avatar', upload.single('avatar'), function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var readStream = fs.createReadStream(req.file.path);
+        var gfs = grid(mongoose.connection.db);
+        var writeStream = gfs.createWriteStream({filename: req.file.filename});
+        readStream.pipe(writeStream);
+        if (writeStream.id) {
+            var previous_avatar = user.avatar;
+            user.avatar = writeStream.id;
+            user.save(function (err, updated) {
+                if (err) throw err;
+                res.json({
+                    'success': true,
+                    'code': error.no_error,
+                    'info': updated
+                });
+            });
+            if (previous_avatar)
+                gfs.remove({_id: previous_avatar}, function (err) {
+                    if (err) throw err;
+                });
+        }
+        else
+            res.json({
+                'success': false,
+                'code': error.upload_failed
+            });
+    });
+});
+
+router.get('/delete_avatar', function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var gfs = grid(mongoose.connection.db);
+        var previous_avatar = user.avatar;
+        user.avatar = null;
+        user.save(function (err, updated) {
+            if (err) throw err;
+            res.json({
+                'success': true,
+                'code': error.no_error,
+                'info': updated
+            });
+        });
+        gfs.remove({_id: previous_avatar}, function (err) {
+            if (err) throw err;
+        });
+
+    });
+});
+
+router.get('/get_avatar', function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var gfs = grid(mongoose.connection.db);
+        gfs.findOne({_id: user.avatar}, function (err, file) {
+            if (err) throw err;
+            if (file.length > 0) {
+                res.set('Content-Type', 'image/jpeg');
+                var readStream = gfs.createReadStream({_id: user.avatar});
+                readStream.pipe(res);
             }
+            else
+                res.json({
+                    'success': false,
+                    'code': error.file_not_found
+                });
         });
-    }
-    else {
-        return res.status(403).json({
-            'success': false,
-            'code': error.no_token_provided
-        });
-    }
+    });
 });
 
 router.post('/apply_for_driver_permission', function (req, res) {
@@ -185,11 +226,10 @@ router.post('/apply_for_driver_permission', function (req, res) {
 });
 
 
-
-router.get("/users", function (req, res) {
-    User.find({}, function (err, users) {
+router.get("/info", function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
         if (err) throw err;
-        res.json(users);
+        res.json(user);
     });
 });
 
