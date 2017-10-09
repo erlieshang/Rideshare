@@ -23,8 +23,18 @@ router.post('/search_ride', function (req, res) {
     sort('-postDate').
     exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
-        
-        return res.json(results);
+        var ret_ride = [];
+        for (var i = 0; i < results.length; i++) {
+            var dx_p = results[i].pickUpLoc.lat - req.body.pickUpLoc.lat;
+            var dy_p = results[i].pickUpLoc.lng - req.body.pickUpLoc.lng;
+            var pick = (dx_p*dx_p + dy_p*dy_p <= Math.pow(results[i].pickUpLoc.range*0.01, 2));
+            var dx_d = results[i].dropOffLoc.lat - req.body.dropOffLoc.lat;
+            var dy_d = results[i].dropOffLoc.lng - req.body.dropOffLoc.lng;
+            var drop = (dx_d*dx_d + dy_d*dy_d <= Math.pow(results[i].dropOffLoc.range*0.01, 2));
+            if (pick && drop)
+                ret_ride.push(results[i]);
+        }
+        return res.json({'success': true, 'code': error.no_error, 'data': ret_ride});
     });
 });
 
