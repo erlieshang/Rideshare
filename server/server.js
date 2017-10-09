@@ -5,6 +5,7 @@ var morgan = require("morgan");
 
 var index = require("./routes/index");
 var user_api = require('./routes/user_api');
+var ride_api = require('./routes/ride_api');
 var config = require('./config');
 
 var app = express();
@@ -28,4 +29,5 @@ app.use(morgan('dev'));
 //Routes
 
 app.use("/", index);
-app.use("/api/user", user_api);
+app.use("/users", user_api);
+app.use("/rides", ride_api);

@@ -11,7 +11,7 @@ var commentSchema = new Schema({
 var userSchema = new Schema({
     firstName: String,
     lastName: String,
-    email: {type: String, lowercase: true, required: true},
+    email: {type: String, lowercase: true, required: true, unique: true},
     number: String,
     avatar: Schema.Types.ObjectId,
     admin: {type: Boolean, default: false},

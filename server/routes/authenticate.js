@@ -1,4 +1,5 @@
 var jwt = require("jsonwebtoken");
+var User = require('../model/user');
 var config = require("../config");
 var error = require('../error');
 
@@ -10,11 +11,19 @@ module.exports = function(req, res, next) {
     if (token) {
         jwt.verify(token, config.secret, function(err, decoded) {
             if (err) {
-                return res.json({ 'success': false, 'code': error.authentication_failed });
+                return res.json({ 'success': false, 'code': error.invalid_token });
             } else {
                 // if everything is good, save to request for use in other routes
                 req.decoded = decoded;
-                next();
+                User.findById(decoded.id, function (err, user) {
+                    if (user.verified)
+                        next();
+                    else
+                        return res.json({
+                            'success': false,
+                            'code': error.user_not_verified
+                        });
+                });
             }
         });
     }
