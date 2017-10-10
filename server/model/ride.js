@@ -28,6 +28,7 @@ var rideSchema = new Schema({
     },
     showNumber: Boolean,
     totalSeats: Number,
+    occupiedSeats: {type: Number, default: 0},
     price: Number,
     internal: {type: Boolean, default: true},
     visible: {type: Boolean, default: true},

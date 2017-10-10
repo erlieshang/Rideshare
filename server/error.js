@@ -18,5 +18,7 @@ module.exports = {
     'edit_others_ride': 16,
     'application_not_existing': 17,
     'application_already_responded': 18,
-    'db_error': 19
+    'db_error': 19,
+    'clear_applications_before_editing': 20,
+    'not_enough_seats': 21
 };

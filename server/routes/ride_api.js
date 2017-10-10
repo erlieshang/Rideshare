@@ -19,18 +19,16 @@ router.post('/search_ride', function (req, res) {
     Ride.find({
         'departDate.from': {$lte: req.body.departDate},
         'departDate.to': {$gte: req.body.departDate}
-    }).
-    sort('-postDate').
-    exec(function (err, results) {
+    }).sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
         var ret_ride = [];
         for (var i = 0; i < results.length; i++) {
             var dx_p = results[i].pickUpLoc.lat - req.body.pickUpLoc.lat;
             var dy_p = results[i].pickUpLoc.lng - req.body.pickUpLoc.lng;
-            var pick = (dx_p*dx_p + dy_p*dy_p <= Math.pow(results[i].pickUpLoc.range*0.01, 2));
+            var pick = (dx_p * dx_p + dy_p * dy_p <= Math.pow(results[i].pickUpLoc.range * 0.01, 2));
             var dx_d = results[i].dropOffLoc.lat - req.body.dropOffLoc.lat;
             var dy_d = results[i].dropOffLoc.lng - req.body.dropOffLoc.lng;
-            var drop = (dx_d*dx_d + dy_d*dy_d <= Math.pow(results[i].dropOffLoc.range*0.01, 2));
+            var drop = (dx_d * dx_d + dy_d * dy_d <= Math.pow(results[i].dropOffLoc.range * 0.01, 2));
             if (pick && drop)
                 ret_ride.push(results[i]);
         }
@@ -43,8 +41,8 @@ router.post('/apply_to_join', function (req, res) {
         res.json({'success': false, 'code': error.key_information_missing});
     else {
         Ride.findById(req.body.ride, function (err, ride) {
-            if (err) return res.json({'success': false, 'code':error.ride_not_found});
-            if (ride.driver == req.decoded.id) return res.json({'success': false, 'code':error.join_your_own_ride});
+            if (err) return res.json({'success': false, 'code': error.ride_not_found});
+            if (ride.driver == req.decoded.id) return res.json({'success': false, 'code': error.join_your_own_ride});
             ride.applications.push({
                 userID: req.decoded.id,
                 seatsReserved: req.body.seats || 1,
@@ -52,8 +50,8 @@ router.post('/apply_to_join', function (req, res) {
                 accepted: null
             });
             ride.save(function (err) {
-                if (err) return res.json({'success': false, 'code':error.save_failed, 'info': err});
-                return res.json({'success': true, 'code':error.no_error, 'info': err});
+                if (err) return res.json({'success': false, 'code': error.save_failed, 'info': err});
+                return res.json({'success': true, 'code': error.no_error, 'info': err});
             });
         });
     }
@@ -64,14 +62,20 @@ router.post('/respond_to_ride', function (req, res) {
         res.json({'success': false, 'code': error.key_information_missing});
     else {
         Ride.findById(req.body.ride, function (err, ride) {
-            if (err) return res.json({'success': false, 'code':error.ride_not_found});
-            if (ride.driver != req.decoded.id) return res.json({'success': false, 'code':error.edit_others_ride});
+            if (err) return res.json({'success': false, 'code': error.ride_not_found});
+            if (ride.driver != req.decoded.id) return res.json({'success': false, 'code': error.edit_others_ride});
             var application = ride.applications.id(req.body.application);
             if (!application)
                 res.json({'success': false, 'code': error.application_not_existing});
             else if (application.accepted)
                 res.json({'success': false, 'code': error.application_already_responded});
             else {
+                if (req.body.accepted) {
+                    if (ride.totalSeats - ride.occupiedSeats < application.seatsReserved)
+                        return res.json({'success': false, 'code': error.not_enough_seats});
+                    else
+                        ride.occupiedSeats += application.seatsReserved;
+                }
                 application.accepted = req.body.accept;
                 ride.save(function (err) {
                     if (err) return res.json({'success': false, 'code': error.save_failed, 'info': err});
@@ -83,10 +87,11 @@ router.post('/respond_to_ride', function (req, res) {
 });
 
 
-
 router.post('/post_ride', function (req, res) {
     if (!req.body.departDate || !Date.parse(req.body.departDate.from) || !Date.parse(req.body.departDate.to))
         res.json({'success': false, 'code': error.bad_data});
+    else if (!req.body.totalSeats || !req.body.pickUpLoc || !req.body.dropOffLoc)
+        res.json({'success': false, 'code': error.key_information_missing});
     else {
         User.findById(req.decoded.id, function (err, user) {
             if (err) throw err;
@@ -108,7 +113,7 @@ router.post('/post_ride', function (req, res) {
                         range: req.body.dropOffLoc.range
                     },
                     showNumber: req.body.showNumber || false,
-                    totalSeats: req.body.totalSeats || -1,
+                    totalSeats: req.body.totalSeats,
                     price: req.body.price || null
                 });
                 newRide.save(function (err) {
@@ -127,6 +132,73 @@ router.post('/post_ride', function (req, res) {
             }
         });
     }
+});
+
+router.post('/edit_ride', function (req, res) {
+    if (!req.body.ride)
+        return res.json({'success': false, 'code': error.key_information_missing});
+    Ride.findById(req.body.ride, function (err, ride) {
+        if (err)
+            return res.json({'success': false, 'code': error.ride_not_found});
+        else if (ride.driver != req.decoded.id)
+            return res.json({'success': false, 'code': error.edit_others_ride});
+        else if (ride.applications.length != 0)
+            return res.json({'success': false, 'code': error.clear_applications_before_editing});
+        ride.departDate.from = req.body.departDate.from ? new Date(req.body.departDate.from) : ride.departDate.from;
+        ride.departDate.to = req.body.departDate.to ? new Date(req.body.departDate.to) : ride.departDate.to;
+        ride.pickUpLoc.lat = req.body.pickUpLoc.lat || ride.pickUpLoc.lat;
+        ride.pickUpLoc.lng = req.body.pickUpLoc.lng || ride.pickUpLoc.lng;
+        ride.pickUpLoc.range = req.body.pickUpLoc.range || ride.pickUpLoc.range;
+        ride.dropOffLoc.lat = req.body.dropOffLoc.lat || ride.dropOffLoc.lat;
+        ride.dropOffLoc.lng = req.body.dropOffLoc.lng || ride.dropOffLoc.lng;
+        ride.dropOffLoc.range = req.body.dropOffLoc.range || ride.dropOffLoc.range;
+        ride.price = req.body.price || ride.price;
+        ride.save(function (err) {
+            if (err) return res.json({'success': false, 'code': error.save_failed});
+            else return res.json({'success': true, 'code': error.no_error});
+        });
+    });
+});
+
+router.post('/update_ride_info', function (req, res) {
+    if (!req.body.ride)
+        return res.json({'success': false, 'code': error.key_information_missing});
+    Ride.findById(req.body.ride, function (err, ride) {
+        if (err)
+            return res.json({'success': false, 'code': error.ride_not_found});
+        else if (ride.driver != req.decoded.id)
+            return res.json({'success': false, 'code': error.edit_others_ride});
+        ride.showNumber = req.body.showNumber || ride.showNumber;
+        ride.totalSeats = req.body.totalSeats || ride.totalSeats;
+        ride.save(function (err) {
+            if (err) return res.json({'success': false, 'code': error.save_failed});
+            else return res.json({'success': true, 'code': error.no_error});
+        });
+    });
+});
+
+router.get('/get_unprocessed_orders', function (req, res) {
+    Ride.find({'driver': req.decoded.id, 'applications.accepted': null})
+        .sort('-postDate')
+        .exec(function (err, results) {
+            if (err) return res.json({'success': false, 'code': error.db_error});
+            return res.json({'success': true, 'code': error.no_error, 'data': results});
+        });
+});
+
+
+router.get('/get_offering_orders', function (req, res) {
+    Ride.find({'driver': req.decoded.id}).sort('-postDate').exec(function (err, results) {
+        if (err) return res.json({'success': false, 'code': error.db_error});
+        return res.json({'success': true, 'code': error.no_error, 'data': results});
+    });
+});
+
+router.get('/get_applied_orders', function (req, res) {
+    Ride.find({'applications.userID': req.decoded.id}).sort('-postDate').exec(function (err, results) {
+        if (err) return res.json({'success': false, 'code': error.db_error});
+        return res.json({'success': true, 'code': error.no_error, 'data': results});
+    });
 });
 
 module.exports = router;
