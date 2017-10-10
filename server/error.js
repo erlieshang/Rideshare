@@ -20,5 +20,6 @@ module.exports = {
     'application_already_responded': 18,
     'db_error': 19,
     'clear_applications_before_editing': 20,
-    'not_enough_seats': 21
+    'not_enough_seats': 21,
+    'already_deleted': 22
 };

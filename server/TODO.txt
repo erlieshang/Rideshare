@@ -1,0 +1,5 @@
+TODO:
+add notification_hub,
+for passengers get the application id,
+get_on_board function,
+automatically calculate rate

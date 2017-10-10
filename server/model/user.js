@@ -3,9 +3,10 @@ var Schema = mongoose.Schema;
 
 var commentSchema = new Schema({
     from: {type: Schema.Types.ObjectId, required: true},
+    order: {type: Schema.Types.ObjectId, required: true},
     content: String,
     date: {type: Date, default: Date.now },
-    rate: Number
+    rate: {type: Number, min: 0, max: 10}
 });
 
 var userSchema = new Schema({

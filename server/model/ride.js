@@ -6,7 +6,9 @@ var passengerSchema = new Schema({
     userID: {type: Schema.Types.ObjectId, required: true, ref: User},
     seatsReserved: Number,
     note: String,
-    accepted: Boolean
+    accepted: Boolean,
+    valid: {type: Boolean, default: true},
+    onBoard: {type: Boolean, default: false}
 });
 
 var rideSchema = new Schema({
@@ -32,6 +34,8 @@ var rideSchema = new Schema({
     price: Number,
     internal: {type: Boolean, default: true},
     visible: {type: Boolean, default: true},
+    valid: {type: Boolean, default: true},
+    allOnBoard: {type: Boolean, default: false},
     applications: [passengerSchema]
 }, {
     runSettersOnQuery: true
