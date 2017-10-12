@@ -4,6 +4,7 @@ var mongoose = require("mongoose");
 var config = require("../config");
 var error = require('../error');
 var auth = require('./authenticate');
+var ride_valid = require('./ride_valild');
 var User = require("../model/user");
 var Ride = require('../model/ride');
 
@@ -12,7 +13,7 @@ var router = express.Router();
 mongoose.connect(config.database);
 
 router.use(auth);
-
+router.use(ride_valid);
 
 
 router.post('/search_ride', function (req, res) {
@@ -48,8 +49,6 @@ router.post('/apply_to_join', function (req, res) {
                 return res.json({'success': false, 'code': error.ride_not_found});
             if (ride.driver == req.decoded.id)
                 return res.json({'success': false, 'code': error.join_your_own_ride});
-            if (!ride.valid)
-                return res.json({'success': false, 'code': error.already_deleted});
             ride.applications.push({
                 userID: req.decoded.id,
                 seatsReserved: req.body.seats || 1,
@@ -73,8 +72,6 @@ router.post('/respond_to_ride', function (req, res) {
                 return res.json({'success': false, 'code': error.ride_not_found});
             if (ride.driver != req.decoded.id)
                 return res.json({'success': false, 'code': error.edit_others_ride});
-            if (!ride.valid)
-                return res.json({'success': false, 'code': error.already_deleted});
             var application = ride.applications.id(req.body.application);
             if (!application)
                 res.json({'success': false, 'code': error.application_not_existing});
@@ -178,8 +175,6 @@ router.post('/update_ride_info', function (req, res) {
             return res.json({'success': false, 'code': error.ride_not_found});
         else if (ride.driver != req.decoded.id)
             return res.json({'success': false, 'code': error.edit_others_ride});
-        else if (!ride.valid)
-            return res.json({'success': false, 'code': error.already_deleted});
         ride.showNumber = req.body.showNumber || ride.showNumber;
         ride.totalSeats = req.body.totalSeats || ride.totalSeats;
         ride.save(function (err) {
@@ -197,8 +192,6 @@ router.post('/delete_ride', function (req, res) {
             return res.json({'success': false, 'code': error.ride_not_found});
         else if (ride.driver != req.decoded.id)
             return res.json({'success': false, 'code': error.edit_others_ride});
-        else if (!ride.valid)
-            return res.json({'success': false, 'code': error.already_deleted});
         ride.valid = false;
         User.findById(req.decoded.id, function (err, user) {
             if (err)
@@ -232,8 +225,6 @@ router.post('/quit_ride', function (req, res) {
             return res.json({'success': false, 'code': error.ride_not_found});
         else if (ride.driver == req.decoded.id)
             return res.json({'success': false, 'code': error.join_your_own_ride});
-        else if (!ride.valid)
-            return res.json({'success': false, 'code': error.already_deleted});
         var application = ride.applications.id(req.body.application);
         if (!application.valid)
             return res.json({'success': false, 'code': error.already_deleted});
@@ -262,7 +253,21 @@ router.post('/quit_ride', function (req, res) {
 });
 
 
+router.get('ride_for_driver', function (req, res) {
+    if (!req.body.ride)
+        return res.json({'success': false, 'code': error.key_information_missing});
+    Ride.findById(req.body.ride, function (err, ride) {
+        if (err)
+            return res.json({'success': false, 'code': error.db_error});
+        if (ride.driver != req.decoded.id)
+            return res.json({'success': false, 'code': error.edit_others_ride});
+        res.json({'success': true, 'code': error.no_error, 'data': ride});
+    });
+});
 
+router.get('ride_for_passenger', function (req, res) {
+    pass
+});
 
 router.get('/get_unprocessed_orders', function (req, res) {
     Ride.find({'driver': req.decoded.id, 'applications.accepted': null, valid: true})
