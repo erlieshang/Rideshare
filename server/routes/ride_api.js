@@ -329,6 +329,28 @@ router.post('/driver_all_on_board', function (req, res) {
     });
 });
 
+router.post('/post_comment', function (req, res) {
+    if (!req.body.ride || !req.body.user || !req.body.type || !req.body.rate)
+        res.json({'success': false, 'code': error.key_information_missing});
+    else {
+        User.findById(req.body.user, function (err, user) {
+            if (err)
+                return res.json({'success': false, 'code': error.db_error});
+            user.comments.push({
+                from: req.decoded.id,
+                order: req.body.ride,
+                content: req.body.content || '',
+                type: req.body.type,
+                rate: req.body.rate
+            });
+            user.save(function (err) {
+                if (err) return res.json({'success': false, 'code': error.save_failed, 'info': err});
+                return res.json({'success': true, 'code': error.no_error});
+            });
+        });
+    }
+});
+
 
 router.get('/ride', function (req, res) {
     if (!req.body.ride)

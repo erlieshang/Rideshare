@@ -5,6 +5,7 @@ var commentSchema = new Schema({
     from: {type: Schema.Types.ObjectId, required: true},
     order: {type: Schema.Types.ObjectId, required: true},
     content: String,
+    type: {type: Number, min: 1, max: 2}, //1 -- passenger->driver, 2 -- driver->passenger
     date: {type: Date, default: Date.now },
     rate: {type: Number, min: 0, max: 10}
 });
