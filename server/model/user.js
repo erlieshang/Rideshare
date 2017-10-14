@@ -23,6 +23,7 @@ var userSchema = new Schema({
     gender: Boolean, //true for male, false for female
     driverPermission: {type: Boolean, default: false},
     driversLicense: {type: String, default: ''},
+    notifications: [Number],
     vehiclePlate: {type: String, default: ''},
     comments: [commentSchema]
     }, {

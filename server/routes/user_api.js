@@ -304,6 +304,19 @@ router.post('/apply_for_driver_permission', function (req, res) {
     });
 });
 
+router.get('/get_notifications', function (req, res) {
+    User.finfById(req.decoded.id, function (err, user) {
+        if (user.notifications.length == 0)
+            return res.json({'code': error.no_notifications});
+        res.json({'code': error.new_notifications, 'data': user.notifications});
+        user.notifications = [];
+        user.save(function (err) {
+            if (err) throw err;
+        });
+    });
+
+});
+
 
 router.get("/info", function (req, res) {
     User.findById(req.decoded.id, function (err, user) {

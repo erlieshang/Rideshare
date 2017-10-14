@@ -21,5 +21,10 @@ module.exports = {
     'db_error': 19,
     'clear_applications_before_editing': 20,
     'not_enough_seats': 21,
-    'already_deleted': 22
+    'already_deleted': 22,
+    'user_not_in_applications': 23,
+    'cannot_edit_ride_within_1_hour': 24,
+    'application_invalid': 25,
+    'no_notifications': 26,
+    'new_notifications': 27
 };

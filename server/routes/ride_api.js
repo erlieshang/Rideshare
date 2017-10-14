@@ -5,6 +5,7 @@ var config = require("../config");
 var error = require('../error');
 var auth = require('./authenticate');
 var ride_valid = require('./ride_valild');
+var notification = require('./notification');
 var User = require("../model/user");
 var Ride = require('../model/ride');
 
@@ -54,6 +55,13 @@ router.post('/apply_to_join', function (req, res) {
                 seatsReserved: req.body.seats || 1,
                 note: req.body.note || null,
                 accepted: null
+            });
+            User.findById(ride.driver, function (err, user) {
+                if (err) return res.json({'success': false, 'code': error.db_error});
+                user.notifications.push(notification.someone_joined);
+                user.save(function (err) {
+                    if (err) return res.json({'success': false, 'code': error.save_failed});
+                });
             });
             ride.save(function (err) {
                 if (err) return res.json({'success': false, 'code': error.save_failed, 'info': err});
@@ -141,7 +149,7 @@ router.post('/post_ride', function (req, res) {
     }
 });
 
-router.post('/edit_ride', function (req, res) {
+router.post('/edit_key_information_ride', function (req, res) {
     if (!req.body.ride)
         return res.json({'success': false, 'code': error.key_information_missing});
     Ride.findById(req.body.ride, function (err, ride) {
@@ -149,8 +157,8 @@ router.post('/edit_ride', function (req, res) {
             return res.json({'success': false, 'code': error.ride_not_found});
         else if (ride.driver != req.decoded.id)
             return res.json({'success': false, 'code': error.edit_others_ride});
-        else if (ride.applications.length != 0)
-            return res.json({'success': false, 'code': error.clear_applications_before_editing});
+        else if (Date.now() - ride.departDate.from <= 60000)
+            return res.json({'success': false, 'code': error.cannot_edit_ride_within_1_hour});
         ride.departDate.from = req.body.departDate.from ? new Date(req.body.departDate.from) : ride.departDate.from;
         ride.departDate.to = req.body.departDate.to ? new Date(req.body.departDate.to) : ride.departDate.to;
         ride.pickUpLoc.lat = req.body.pickUpLoc.lat || ride.pickUpLoc.lat;
@@ -160,6 +168,15 @@ router.post('/edit_ride', function (req, res) {
         ride.dropOffLoc.lng = req.body.dropOffLoc.lng || ride.dropOffLoc.lng;
         ride.dropOffLoc.range = req.body.dropOffLoc.range || ride.dropOffLoc.range;
         ride.price = req.body.price || ride.price;
+        for (var i = 0; i < ride.applications.length; i++) {
+            User.findById(ride.applications[i].userID, function (err, user) {
+                if (err) return res.json({'success': false, 'code': error.db_error});
+                user.notifications.push(notification.ride_information_changed);
+                user.save(function (err) {
+                    if (err) return res.json({'success': false, 'code': error.save_failed});
+                });
+            });
+        }
         ride.save(function (err) {
             if (err) return res.json({'success': false, 'code': error.save_failed});
             else return res.json({'success': true, 'code': error.no_error});
@@ -167,7 +184,7 @@ router.post('/edit_ride', function (req, res) {
     });
 });
 
-router.post('/update_ride_info', function (req, res) {
+router.post('/edit_ride', function (req, res) {
     if (!req.body.ride)
         return res.json({'success': false, 'code': error.key_information_missing});
     Ride.findById(req.body.ride, function (err, ride) {
@@ -193,6 +210,15 @@ router.post('/delete_ride', function (req, res) {
         else if (ride.driver != req.decoded.id)
             return res.json({'success': false, 'code': error.edit_others_ride});
         ride.valid = false;
+        for (var i = 0; i < ride.applications.length; i++) {
+            User.findById(ride.applications[i].userID, function (err, user) {
+                if (err) return res.json({'success': false, 'code': error.db_error});
+                user.notifications.push(notification.ride_cancelled);
+                user.save(function (err) {
+                    if (err) return res.json({'success': false, 'code': error.save_failed});
+                });
+            });
+        }
         User.findById(req.decoded.id, function (err, user) {
             if (err)
                 return res.json({'success': false, 'code': error.db_error});
@@ -217,6 +243,7 @@ router.post('/delete_ride', function (req, res) {
     });
 });
 
+//passengers quit within 1 hour before the ride starts, get default bad rate
 router.post('/quit_ride', function (req, res) {
     if (!req.body.ride || !req.body.application)
         return res.json({'success': false, 'code': error.key_information_missing});
@@ -230,21 +257,71 @@ router.post('/quit_ride', function (req, res) {
             return res.json({'success': false, 'code': error.already_deleted});
         else if (application.userID != req.decoded.id)
             return res.json({'success': false, 'code': error.edit_others_ride});
-        else
+        else {
             application.valid = false;
-        User.findById(req.decoded.id, function (err, user) {
-            if (err)
-                return res.json({'success': false, 'code': error.db_error});
-            user.comments.push({
-                from: ride.driver,
-                order: ride._id,
-                content: "Default negative review due to quitting this ride",
-                rate: 0
-            });
-            user.save(function (err) {
+            ride.occupiedSeats -= application.seatsReserved;
+            User.findById(ride.driver, function (err, user) {
                 if (err) return res.json({'success': false, 'code': error.db_error});
+                user.notifications.push(notification.someone_quited);
+                user.save(function (err) {
+                    if (err) return res.json({'success': false, 'code': error.save_failed});
+                });
             });
-        });
+            if (Date.now() - ride.departDate.from <= 60000) {
+                User.findById(req.decoded.id, function (err, user) {
+                    if (err)
+                        return res.json({'success': false, 'code': error.db_error});
+                    user.comments.push({
+                        from: ride.driver,
+                        order: ride._id,
+                        content: "Default negative review due to quitting this ride",
+                        rate: 0
+                    });
+                    user.save(function (err) {
+                        if (err) return res.json({'success': false, 'code': error.db_error});
+                    });
+                });
+            }
+            ride.save(function (err) {
+                if (err) return res.json({'success': false, 'code': error.db_error});
+                return res.json({'success': true, 'code': error.no_error});
+            });
+        }
+    });
+});
+
+router.post('/passenger_on_board', function (req, res) {
+    if (!req.body.ride || !req.body.application)
+        return res.json({'success': false, 'code': error.key_information_missing});
+    Ride.findById(req.body.ride, function (err, ride) {
+        if (err)
+            return res.json({'success': false, 'code': error.ride_not_found});
+        else if (ride.driver == req.decoded.id)
+            return res.json({'success': false, 'code': error.join_your_own_ride});
+        var application = ride.applications.id(req.body.application);
+        if (!application.valid)
+            return res.json({'success': false, 'code': error.application_invalid});
+        else if (application.userID != req.decoded.id)
+            return res.json({'success': false, 'code': error.edit_others_ride});
+        else {
+            application.onBoard = true;
+            ride.save(function (err) {
+                if (err) return res.json({'success': false, 'code': error.db_error});
+                return res.json({'success': true, 'code': error.no_error});
+            });
+        }
+    });
+});
+
+router.post('/driver_all_on_board', function (req, res) {
+    if (!req.body.ride)
+        return res.json({'success': false, 'code': error.key_information_missing});
+    Ride.findById(req.body.ride, function (err, ride) {
+        if (err)
+            return res.json({'success': false, 'code': error.ride_not_found});
+        else if (ride.driver != req.decoded.id)
+            return res.json({'success': false, 'code': error.edit_others_ride});
+        ride.allOnBoard = true;
         ride.save(function (err) {
             if (err) return res.json({'success': false, 'code': error.db_error});
             return res.json({'success': true, 'code': error.no_error});
@@ -253,20 +330,35 @@ router.post('/quit_ride', function (req, res) {
 });
 
 
-router.get('ride_for_driver', function (req, res) {
+router.get('/ride', function (req, res) {
     if (!req.body.ride)
         return res.json({'success': false, 'code': error.key_information_missing});
     Ride.findById(req.body.ride, function (err, ride) {
         if (err)
             return res.json({'success': false, 'code': error.db_error});
-        if (ride.driver != req.decoded.id)
-            return res.json({'success': false, 'code': error.edit_others_ride});
         res.json({'success': true, 'code': error.no_error, 'data': ride});
     });
 });
 
-router.get('ride_for_passenger', function (req, res) {
-    pass
+//get applications for a particular ride (no whether valid or not)
+router.get('/application', function (req, res) {
+    if (!req.body.ride)
+        return res.json({'success': false, 'code': error.key_information_missing});
+    Ride.findById(req.body.ride, function (err, ride) {
+        if (err)
+            return res.json({'success': false, 'code': error.db_error});
+        if (ride.driver == req.decoded.id)
+            return res.json({'success': false, 'code': error.join_your_own_ride});
+        var results = [];
+        for (var i = 0; i < ride.applications.length; i++) {
+            if (ride.applications[i].UserID == req.decoded.id)
+                results.push(ride.applications[i]);
+        }
+        if (results.length > 0)
+            return res.json({'success': false, 'code': error.no_error, 'data': results});
+        else
+            return res.json({'success': false, 'code': error.user_not_in_applications});
+    });
 });
 
 router.get('/get_unprocessed_orders', function (req, res) {
