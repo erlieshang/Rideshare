@@ -19,7 +19,7 @@ mongoose.connect(config.database);
 grid.mongo = mongoose.mongo;
 
 router.post('/test', function (req, res) {
-    return res.json(res.body);
+    return res.json(req.body);
 });
 
 router.post('/register', function (req, res) {
