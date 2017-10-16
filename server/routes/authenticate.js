@@ -16,6 +16,8 @@ module.exports = function(req, res, next) {
                 // if everything is good, save to request for use in other routes
                 req.decoded = decoded;
                 User.findById(decoded.id, function (err, user) {
+                    if (err) return res.json({'code': error.db_error});
+                    if (!user) return res.json({'code': error.user_not_found});
                     if (user.verified)
                         next();
                     else

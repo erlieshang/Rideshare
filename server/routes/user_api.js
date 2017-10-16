@@ -18,6 +18,10 @@ var transporter = config.transporter;
 mongoose.connect(config.database);
 grid.mongo = mongoose.mongo;
 
+router.post('/test', function (req, res) {
+    return res.json(res.body);
+});
+
 router.post('/register', function (req, res) {
     if (!req.body.email || !req.body.password)
         res.json({'success': false, 'code': error.key_information_missing});
