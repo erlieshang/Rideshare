@@ -35,6 +35,9 @@ router.post('/register', function (req, res) {
                 });
             }
             var verification_code = Math.ceil(Math.random() * 999999);
+            var gender = true;
+            if (req.body.gender == 'female')
+                gender = false;
             var newUser = new User({
                 firstName: req.body.firstName || null,
                 lastName: req.body.lastName || null,
@@ -42,7 +45,7 @@ router.post('/register', function (req, res) {
                 number: req.body.number || null,
                 password: bcrypt.hashSync(req.body.password),
                 verifyCode: verification_code,
-                gender: req.body.gender || true
+                gender: gender
             });
             newUser.save(function (err) {
                 if (err) res.send(err);
@@ -60,6 +63,7 @@ router.post('/register', function (req, res) {
                             })
                         }
                     });
+                    opts.text = opts.text.replace(String(verification_code), "");
                 }
             });
         });
