@@ -26,5 +26,6 @@ module.exports = {
     'cannot_edit_ride_within_1_hour': 24,
     'application_invalid': 25,
     'no_notifications': 26,
-    'new_notifications': 27
+    'new_notifications': 27,
+    'user_existed': 28
 };

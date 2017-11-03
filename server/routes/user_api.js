@@ -26,33 +26,42 @@ router.post('/register', function (req, res) {
     if (!req.body.email || !req.body.password)
         res.json({'success': false, 'code': error.key_information_missing});
     else {
-        var verification_code = Math.ceil(Math.random() * 999999);
-        var newUser = new User({
-            firstName: req.body.firstName || null,
-            lastName: req.body.lastName || null,
-            email: req.body.email,
-            number: req.body.number || null,
-            password: bcrypt.hashSync(req.body.password),
-            verifyCode: verification_code,
-            gender: req.body.gender || true
-        });
-        newUser.save(function (err) {
-            if (err) res.send(err);
-            else {
-                var opts = config.email_content;
-                opts.to = req.body.email;
-                opts.text += String(verification_code);
-                transporter.sendMail(opts, function (err, info) {
-                    if (err) {
-                        res.send(err);
-                    } else {
-                        res.json({
-                            'info': info,
-                            'code': error.no_error
-                        })
-                    }
+        User.findOne({email: req.body.email}, function (err, user) {
+            if (err) throw err;
+            if (user) {
+                return res.json({
+                    'success': false,
+                    'code': error.user_existed
                 });
             }
+            var verification_code = Math.ceil(Math.random() * 999999);
+            var newUser = new User({
+                firstName: req.body.firstName || null,
+                lastName: req.body.lastName || null,
+                email: req.body.email,
+                number: req.body.number || null,
+                password: bcrypt.hashSync(req.body.password),
+                verifyCode: verification_code,
+                gender: req.body.gender || true
+            });
+            newUser.save(function (err) {
+                if (err) res.send(err);
+                else {
+                    var opts = config.email_content;
+                    opts.to = req.body.email;
+                    opts.text += String(verification_code);
+                    transporter.sendMail(opts, function (err, info) {
+                        if (err) {
+                            res.send(err);
+                        } else {
+                            res.json({
+                                'info': info,
+                                'code': error.no_error
+                            })
+                        }
+                    });
+                }
+            });
         });
     }
 });
