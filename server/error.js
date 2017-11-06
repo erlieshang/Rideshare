@@ -27,5 +27,6 @@ module.exports = {
     'application_invalid': 25,
     'no_notifications': 26,
     'new_notifications': 27,
-    'user_existed': 28
+    'user_existed': 28,
+    'map_error': 29
 };

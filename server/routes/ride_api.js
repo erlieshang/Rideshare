@@ -1,5 +1,6 @@
 var express = require("express");
 var mongoose = require("mongoose");
+var unirest = require('unirest');
 
 var config = require("../config");
 var error = require('../error');
@@ -16,6 +17,10 @@ mongoose.connect(config.database);
 router.use(auth);
 router.use(ride_valid);
 
+router.post('/test', function (req, res) {
+
+});
+
 
 router.post('/search_ride', function (req, res) {
     if (!req.body.pickUpLoc || !req.body.dropOffLoc || !req.body.departDate)
@@ -27,17 +32,41 @@ router.post('/search_ride', function (req, res) {
     }).sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
         var ret_ride = [];
-        for (var i = 0; i < results.length; i++) {
-            var dx_p = results[i].pickUpLoc.lat - req.body.pickUpLoc.lat;
-            var dy_p = results[i].pickUpLoc.lng - req.body.pickUpLoc.lng;
-            var pick = (dx_p * dx_p + dy_p * dy_p <= Math.pow(results[i].pickUpLoc.range * 0.01, 2));
-            var dx_d = results[i].dropOffLoc.lat - req.body.dropOffLoc.lat;
-            var dy_d = results[i].dropOffLoc.lng - req.body.dropOffLoc.lng;
-            var drop = (dx_d * dx_d + dy_d * dy_d <= Math.pow(results[i].dropOffLoc.range * 0.01, 2));
-            if (pick && drop)
-                ret_ride.push(results[i]);
-        }
-        return res.json({'success': true, 'code': error.no_error, 'data': ret_ride});
+        var pick_up = {};
+        var drop_off = {};
+        unirest.get(config.map_url)
+            .query({'address': req.body.pickUpLoc})
+            .query({'key': config.map_key})
+            .end(function (response) {
+                if (response.error) {
+                    return res.json({'code': error.map_error});
+                } else {
+                    pick_up.lat = response.body.results[0].geometry.location.lat;
+                    pick_up.lng = response.body.results[0].geometry.location.lng;
+                    unirest.get(config.map_url)
+                        .query({'address': req.body.dropOffLoc})
+                        .query({'key': config.map_key})
+                        .end(function (response) {
+                            if (response.error) {
+                                return res.json({'code': error.map_error});
+                            } else {
+                                drop_off.lat = response.body.results[0].geometry.location.lat;
+                                drop_off.lng = response.body.results[0].geometry.location.lng;
+                                for (var i = 0; i < results.length; i++) {
+                                    var dx_p = results[i].pickUpLoc.lat - pick_up.lat;
+                                    var dy_p = results[i].pickUpLoc.lng - pick_up.lng;
+                                    var pick = (dx_p * dx_p + dy_p * dy_p <= Math.pow(results[i].pickUpLoc.range * 0.01, 2));
+                                    var dx_d = results[i].dropOffLoc.lat - drop_off.lat;
+                                    var dy_d = results[i].dropOffLoc.lng - drop_off.lng;
+                                    var drop = (dx_d * dx_d + dy_d * dy_d <= Math.pow(results[i].dropOffLoc.range * 0.01, 2));
+                                    if (pick && drop)
+                                        ret_ride.push(results[i]);
+                                }
+                                return res.json({'success': true, 'code': error.no_error, 'data': ret_ride});
+                            }
+                        });
+                }
+            });
     });
 });
 
@@ -111,33 +140,58 @@ router.post('/post_ride', function (req, res) {
         User.findById(req.decoded.id, function (err, user) {
             if (err) throw err;
             if (user.driverPermission) {
-                var newRide = new Ride({
-                    driver: req.decoded.id,
-                    departDate: {
-                        from: new Date(req.body.departDate.from),
-                        to: new Date(req.body.departDate.to)
-                    },
-                    pickUpLoc: {
-                        lat: req.body.pickUpLoc.lat,
-                        lng: req.body.pickUpLoc.lng,
-                        range: req.body.pickUpLoc.range
-                    },
-                    dropOffLoc: {
-                        lat: req.body.dropOffLoc.lat,
-                        lng: req.body.dropOffLoc.lng,
-                        range: req.body.dropOffLoc.range
-                    },
-                    showNumber: req.body.showNumber || false,
-                    totalSeats: req.body.totalSeats,
-                    price: req.body.price || null
-                });
-                newRide.save(function (err) {
-                    if (err) throw err;
-                    res.json({
-                        'success': true,
-                        'code': error.no_error
+                var pick_up = {};
+                var drop_off = {};
+                unirest.get(config.map_url)
+                    .query({'address': req.body.pickUpLoc.address})
+                    .query({'key': config.map_key})
+                    .end(function (response) {
+                        if (response.error) {
+                            return res.json({'code': error.map_error});
+                        } else {
+                            pick_up.lat = response.body.results[0].geometry.location.lat;
+                            pick_up.lng = response.body.results[0].geometry.location.lng;
+                            unirest.get(config.map_url)
+                                .query({'address': req.body.dropOffLoc.address})
+                                .query({'key': config.map_key})
+                                .end(function (response) {
+                                    if (response.error) {
+                                        return res.json({'code': error.map_error});
+                                    } else {
+                                        drop_off.lat = response.body.results[0].geometry.location.lat;
+                                        drop_off.lng = response.body.results[0].geometry.location.lng;
+                                        var newRide = new Ride({
+                                            driver: req.decoded.id,
+                                            departDate: {
+                                                from: new Date(req.body.departDate.from),
+                                                to: new Date(req.body.departDate.to)
+                                            },
+                                            pickUpLoc: {
+                                                lat: pick_up.lat,
+                                                lng: pick_up.lng,
+                                                range: req.body.pickUpLoc.range
+                                            },
+                                            dropOffLoc: {
+                                                lat: drop_off.lat,
+                                                lng: drop_off.lng,
+                                                range: req.body.dropOffLoc.range
+                                            },
+                                            showNumber: req.body.showNumber || false,
+                                            totalSeats: req.body.totalSeats,
+                                            price: req.body.price || null
+                                        });
+                                        newRide.save(function (err) {
+                                            if (err) return res.json({'code': error.db_error});
+                                            res.json({
+                                                'success': true,
+                                                'code': error.no_error
+                                            });
+                                        });
+
+                                    }
+                                });
+                        }
                     });
-                });
             }
             else {
                 res.json({

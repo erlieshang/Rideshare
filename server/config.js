@@ -4,6 +4,8 @@ module.exports = {
     'secret': 'rideshareapp',
     'database': 'mongodb://eshang:1234@ds149134.mlab.com:49134/rideshare',
     'port': process.env.PORT || 3000,
+    'map_key': 'AIzaSyCTm49O74oV_qxfDomdco5o2OyP4acq6Sw',
+    'map_url': 'https://maps.googleapis.com/maps/api/geocode/json',
     'transporter': nodemailer.createTransport({
         service: 'gmail',
         auth: {
