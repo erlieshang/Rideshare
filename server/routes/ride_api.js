@@ -138,7 +138,7 @@ router.post('/post_ride', function (req, res) {
         res.json({'success': false, 'code': error.key_information_missing});
     else {
         User.findById(req.decoded.id, function (err, user) {
-            if (err) throw err;
+            if (err) return res.json({'success': false, 'code': error.db_error});
             if (user.driverPermission) {
                 var pick_up = {};
                 var drop_off = {};
