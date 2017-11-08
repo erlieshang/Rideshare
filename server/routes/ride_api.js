@@ -151,6 +151,7 @@ router.post('/post_ride', function (req, res) {
                         } else {
                             pick_up.lat = response.body.results[0].geometry.location.lat;
                             pick_up.lng = response.body.results[0].geometry.location.lng;
+                            pick_up.formattedAddress = response.body.results[0].formatted_address;
                             unirest.get(config.map_url)
                                 .query({'address': req.body.dropOffLoc.address})
                                 .query({'key': config.map_key})
@@ -160,6 +161,7 @@ router.post('/post_ride', function (req, res) {
                                     } else {
                                         drop_off.lat = response.body.results[0].geometry.location.lat;
                                         drop_off.lng = response.body.results[0].geometry.location.lng;
+                                        drop_off.formattedAddress = response.body.results[0].formatted_address;
                                         var newRide = new Ride({
                                             driver: req.decoded.id,
                                             departDate: {
@@ -169,12 +171,14 @@ router.post('/post_ride', function (req, res) {
                                             pickUpLoc: {
                                                 lat: pick_up.lat,
                                                 lng: pick_up.lng,
-                                                range: req.body.pickUpLoc.range
+                                                range: req.body.pickUpLoc.range,
+                                                formattedAddress: pick_up.formattedAddress
                                             },
                                             dropOffLoc: {
                                                 lat: drop_off.lat,
                                                 lng: drop_off.lng,
-                                                range: req.body.dropOffLoc.range
+                                                range: req.body.dropOffLoc.range,
+                                                formattedAddress: drop_off.formattedAddress
                                             },
                                             showNumber: req.body.showNumber || false,
                                             totalSeats: req.body.totalSeats,

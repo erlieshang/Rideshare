@@ -21,12 +21,14 @@ var rideSchema = new Schema({
     pickUpLoc: {
         lat: {type: Number, min: -90, max: 90},
         lng: {type: Number, min: -180, max: 180},
-        range: Number //unit 1 km, which means 0.01 degree in lat or lng
+        range: Number, //unit 1 km, which means 0.01 degree in lat or lng
+        formattedAddress: String
     },
     dropOffLoc: {
         lat: {type: Number, min: -90, max: 90},
         lng: {type: Number, min: -180, max: 180},
-        range: Number //unit 1 km, which means 0.01 degree in lat or lng
+        range: Number, //unit 1 km, which means 0.01 degree in lat or lng
+        formattedAddress: String
     },
     showNumber: Boolean,
     totalSeats: Number,
