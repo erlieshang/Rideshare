@@ -29,8 +29,9 @@ router.post('/search_ride', function (req, res) {
         'departDate.from': {$lte: req.body.departDate},
         'departDate.to': {$gte: req.body.departDate},
         'valid': true
-    }).sort('-postDate').exec(function (err, results) {
-        if (err) return res.json({'success': false, 'code': error.db_error});
+    }).populate('driver', 'firstName lastName score number vehiclePlate')
+        .sort('-postDate').exec(function (err, results) {
+        if (err) return res.json({'success': false, 'code': error.db_error, 'info': err});
         var ret_ride = [];
         var pick_up = {};
         var drop_off = {};

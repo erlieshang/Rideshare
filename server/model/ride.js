@@ -3,7 +3,7 @@ var User = require('./user');
 var Schema = mongoose.Schema;
 
 var passengerSchema = new Schema({
-    userID: {type: Schema.Types.ObjectId, required: true, ref: User},
+    userID: {type: Schema.Types.ObjectId, required: true, ref: 'User'},
     seatsReserved: Number,
     note: String,
     accepted: Boolean,
@@ -12,7 +12,7 @@ var passengerSchema = new Schema({
 });
 
 var rideSchema = new Schema({
-    driver: {type: Schema.Types.ObjectId, required: true, ref: User},
+    driver: {type: Schema.Types.ObjectId, required: true, ref: 'User'},
     postDate: {type: Date, default: Date.now},
     departDate: {
         from: Date,
