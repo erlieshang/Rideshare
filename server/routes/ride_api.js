@@ -11,6 +11,7 @@ var User = require("../model/user");
 var Ride = require('../model/ride');
 
 var router = express.Router();
+var transporter = config.transporter;
 
 mongoose.connect(config.database);
 
@@ -28,7 +29,7 @@ router.post('/search_ride', function (req, res) {
     Ride.find({
         'departDate.from': {$lte: req.body.departDate},
         'departDate.to': {$gte: req.body.departDate},
-        'valid': true
+        valid: true
     }).populate('driver', 'firstName lastName score number vehiclePlate')
         .sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error, 'info': err});
@@ -88,10 +89,23 @@ router.post('/apply_to_join', function (req, res) {
             });
             User.findById(ride.driver, function (err, user) {
                 if (err) return res.json({'success': false, 'code': error.db_error});
-                user.notifications.push(notification.someone_joined);
-                user.save(function (err) {
-                    if (err) return res.json({'success': false, 'code': error.save_failed});
+                //user.notifications.push(notification.someone_joined);
+                // user.save(function (err) {
+                //     if (err) return res.json({'success': false, 'code': error.save_failed});
+                // });
+                var opts = config.email_join;
+                opts.to = user.email;
+                transporter.sendMail(opts, function (err, info) {
+                    if (err) {
+                        res.send(err);
+                    } else {
+                        res.json({
+                            'info': info,
+                            'code': error.no_error
+                        });
+                    }
                 });
+
             });
             ride.save(function (err) {
                 if (err) return res.json({'success': false, 'code': error.save_failed, 'info': err});

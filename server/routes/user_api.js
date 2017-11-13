@@ -14,6 +14,7 @@ var auth = require('./authenticate');
 var router = express.Router();
 var upload = multer({dest: './uploads/'});
 var transporter = config.transporter;
+var email_reg = /^[a-z0-9]+([._\\-]*[a-z0-9])*@([a-z0-9]+[-a-z0-9]*[a-z0-9]+.){1,63}[a-z0-9]+$/;
 
 mongoose.connect(config.database);
 grid.mongo = mongoose.mongo;
@@ -23,7 +24,7 @@ router.post('/test', function (req, res) {
 });
 
 router.post('/register', function (req, res) {
-    if (!req.body.email || !req.body.password)
+    if (!req.body.email || !req.body.password || !email_reg.test(req.body.email))
         res.json({'success': false, 'code': error.key_information_missing});
     else {
         User.findOne({email: req.body.email}, function (err, user) {
@@ -60,7 +61,7 @@ router.post('/register', function (req, res) {
                             res.json({
                                 'info': info,
                                 'code': error.no_error
-                            })
+                            });
                         }
                     });
                     opts.text = opts.text.replace(String(verification_code), "");

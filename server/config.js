@@ -18,5 +18,11 @@ module.exports = {
         to: '',
         subject: 'Verification Code From Rideshare',
         text: 'Enter the following code in the Rideshare App to verify your email address: '
+    },
+    'email_join': {
+        from: 'noreply.rideshare@gmail.com',
+        to: '',
+        subject: 'Someone wants to join your ride!',
+        text: 'Dear User, someone wants to join your ride! Checkout your RideShare app to approve or reject!'
     }
 };
