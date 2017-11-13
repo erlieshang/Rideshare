@@ -479,4 +479,18 @@ router.get('/get_applied_orders', function (req, res) {
     });
 });
 
+router.get('/get_pending_applications', function (req, res) {
+    Ride.find({
+        applications: {
+            $elemMatch: {
+                userID: req.decoded.id,
+                accepted: null
+            }
+        }
+    }).sort('-postDate').exec(function (err, results) {
+        if (err) return res.json({'success': false, 'code': error.db_error});
+        return res.json({'success': true, 'code': error.no_error, 'data': results});
+    });
+});
+
 module.exports = router;
