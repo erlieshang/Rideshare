@@ -458,6 +458,7 @@ router.get('/application', function (req, res) {
 
 router.get('/get_unprocessed_orders', function (req, res) {
     Ride.find({'driver': req.decoded.id, 'applications.accepted': null, valid: true})
+        .populate('applications.userID', 'firstName lastName score number')
         .sort('-postDate')
         .exec(function (err, results) {
             if (err) return res.json({'success': false, 'code': error.db_error});
@@ -466,14 +467,18 @@ router.get('/get_unprocessed_orders', function (req, res) {
 });
 
 router.get('/get_offering_orders', function (req, res) {
-    Ride.find({'driver': req.decoded.id}).sort('-postDate').exec(function (err, results) {
+    Ride.find({'driver': req.decoded.id})
+        .populate('applications.userID', 'firstName lastName score number')
+        .sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
         return res.json({'success': true, 'code': error.no_error, 'data': results});
     });
 });
 
 router.get('/get_applied_orders', function (req, res) {
-    Ride.find({'applications.userID': req.decoded.id}).sort('-postDate').exec(function (err, results) {
+    Ride.find({'applications.userID': req.decoded.id})
+        .populate('driver', 'firstName lastName score number vehiclePlate')
+        .sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
         return res.json({'success': true, 'code': error.no_error, 'data': results});
     });
@@ -487,7 +492,7 @@ router.get('/get_pending_applications', function (req, res) {
                 accepted: null
             }
         }
-    }).sort('-postDate').exec(function (err, results) {
+    }).populate('driver', 'firstName lastName score number vehiclePlate').sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
         return res.json({'success': true, 'code': error.no_error, 'data': results});
     });
