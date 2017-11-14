@@ -127,7 +127,7 @@ router.post('/respond_to_ride', function (req, res) {
             var application = ride.applications.id(req.body.application);
             if (!application)
                 res.json({'success': false, 'code': error.application_not_existing});
-            else if (application.accepted)
+            else if (application.accepted != null)
                 res.json({'success': false, 'code': error.application_already_responded});
             else {
                 if (req.body.accepted) {
