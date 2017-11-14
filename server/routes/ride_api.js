@@ -116,7 +116,7 @@ router.post('/apply_to_join', function (req, res) {
 });
 
 router.post('/respond_to_ride', function (req, res) {
-    if (!req.body.ride || !req.body.accept || !req.body.application)
+    if (!req.body.ride || req.body.accept == null || !req.body.application)
         res.json({'success': false, 'code': error.key_information_missing});
     else {
         Ride.findById(req.body.ride, function (err, ride) {
