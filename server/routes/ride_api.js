@@ -130,7 +130,7 @@ router.post('/respond_to_ride', function (req, res) {
             else if (application.accepted != null)
                 res.json({'success': false, 'code': error.application_already_responded});
             else {
-                if (req.body.accepted) {
+                if (req.body.accept) {
                     if (ride.totalSeats - ride.occupiedSeats < application.seatsReserved)
                         return res.json({'success': false, 'code': error.not_enough_seats});
                     else
