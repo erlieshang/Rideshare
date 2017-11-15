@@ -471,6 +471,7 @@ router.get('/get_offering_orders', function (req, res) {
         .populate('applications.userID', 'firstName lastName score number')
         .sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
+
         return res.json({'success': true, 'code': error.no_error, 'data': results});
     });
 });
@@ -480,6 +481,14 @@ router.get('/get_applied_orders', function (req, res) {
         .populate('driver', 'firstName lastName score number vehiclePlate')
         .sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
+        for (var i = 0; i < results.length; i++) {
+            for (var j = 0; j < results[i].applications.length; j++) {
+                if (results[i].applications[j].userID != req.decoded.id) {
+                    results[i].applications.splice(j, 1);
+                    j--;
+                }
+            }
+        }
         return res.json({'success': true, 'code': error.no_error, 'data': results});
     });
 });
@@ -494,6 +503,14 @@ router.get('/get_pending_applications', function (req, res) {
         }
     }).populate('driver', 'firstName lastName score number vehiclePlate').sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
+        for (var i = 0; i < results.length; i++) {
+            for (var j = 0; j < results[i].applications.length; j++) {
+                if (results[i].applications[j].userID != req.decoded.id) {
+                    results[i].applications.splice(j, 1);
+                    j--;
+                }
+            }
+        }
         return res.json({'success': true, 'code': error.no_error, 'data': results});
     });
 });
