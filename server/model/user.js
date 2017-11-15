@@ -15,11 +15,11 @@ var userSchema = new Schema({
     lastName: String,
     email: {type: String, lowercase: true, required: true, unique: true},
     number: String,
-    avatar: Schema.Types.ObjectId,
+    avatar: {type: Schema.Types.ObjectId, default: null},
     payment: {
         paypal: {type: String, default: null},
-        wechat: Schema.Types.ObjectId,
-        alipay: Schema.Types.ObjectId
+        wechat: {type: Schema.Types.ObjectId, default: null},
+        alipay: {type: Schema.Types.ObjectId, default: null}
     },
     admin: {type: Boolean, default: false},
     password: {type: String, required: true},

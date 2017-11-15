@@ -248,6 +248,148 @@ router.get('/get_avatar', function (req, res) {
     });
 });
 
+router.post('/upload_alipay', upload.single('alipay'), function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var readStream = fs.createReadStream(req.file.path);
+        var gfs = grid(mongoose.connection.db);
+        var writeStream = gfs.createWriteStream({filename: req.file.filename});
+        readStream.pipe(writeStream);
+        if (writeStream.id) {
+            var previous = user.payment.alipay;
+            user.payment.alipay = writeStream.id;
+            user.save(function (err, updated) {
+                if (err) throw err;
+                if (previous)
+                    gfs.remove({_id: previous}, function (err) {
+                        if (err) throw err;
+                    });
+                res.json({
+                    'success': true,
+                    'code': error.no_error,
+                    'info': updated
+                });
+            });
+        }
+        else
+            res.json({
+                'success': false,
+                'code': error.upload_failed
+            });
+    });
+});
+
+router.get('/delete_alipay', function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var gfs = grid(mongoose.connection.db);
+        var previous = user.payment.alipay;
+        user.user.payment.alipay = null;
+        user.save(function (err, updated) {
+            if (err) throw err;
+            gfs.remove({_id: previous}, function (err) {
+                if (err) throw err;
+            });
+            res.json({
+                'success': true,
+                'code': error.no_error,
+                'info': updated
+            });
+        });
+    });
+});
+
+router.get('/get_alipay', function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var gfs = grid(mongoose.connection.db);
+        gfs.findOne({_id: user.payment.alipay}, function (err, file) {
+            if (err) throw err;
+            if (file.length > 0) {
+                res.set('Content-Type', 'image/jpeg');
+                var readStream = gfs.createReadStream({_id: user.payment.alipay});
+                readStream.pipe(res);
+            }
+            else
+                res.json({
+                    'success': false,
+                    'code': error.file_not_found
+                });
+        });
+    });
+});
+
+router.post('/upload_wechat', upload.single('wechat'), function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var readStream = fs.createReadStream(req.file.path);
+        var gfs = grid(mongoose.connection.db);
+        var writeStream = gfs.createWriteStream({filename: req.file.filename});
+        readStream.pipe(writeStream);
+        if (writeStream.id) {
+            var previous = user.payment.wechat;
+            user.payment.wechat = writeStream.id;
+            user.save(function (err, updated) {
+                if (err) throw err;
+                if (previous)
+                    gfs.remove({_id: previous}, function (err) {
+                        if (err) throw err;
+                    });
+                res.json({
+                    'success': true,
+                    'code': error.no_error,
+                    'info': updated
+                });
+            });
+        }
+        else
+            res.json({
+                'success': false,
+                'code': error.upload_failed
+            });
+    });
+});
+
+router.get('/delete_wechat', function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var gfs = grid(mongoose.connection.db);
+        var previous = user.payment.wechat;
+        user.user.payment.wechat = null;
+        user.save(function (err, updated) {
+            if (err) throw err;
+            gfs.remove({_id: previous}, function (err) {
+                if (err) throw err;
+            });
+            res.json({
+                'success': true,
+                'code': error.no_error,
+                'info': updated
+            });
+        });
+    });
+});
+
+router.get('/get_wechat', function (req, res) {
+    User.findById(req.decoded.id, function (err, user) {
+        if (err) throw err;
+        var gfs = grid(mongoose.connection.db);
+        gfs.findOne({_id: user.payment.wechat}, function (err, file) {
+            if (err) throw err;
+            if (file.length > 0) {
+                res.set('Content-Type', 'image/jpeg');
+                var readStream = gfs.createReadStream({_id: user.payment.wechat});
+                readStream.pipe(res);
+            }
+            else
+                res.json({
+                    'success': false,
+                    'code': error.file_not_found
+                });
+        });
+    });
+});
+
 router.post('/edit_profile', function (req, res) {
     User.findById(req.decoded.id, function (err, user) {
         if (err) res.json(err);
