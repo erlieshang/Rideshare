@@ -46,7 +46,8 @@ router.post('/register', function (req, res) {
                 number: req.body.number || null,
                 password: bcrypt.hashSync(req.body.password),
                 verifyCode: verification_code,
-                gender: gender
+                gender: gender,
+                'payment.paypal': req.body.paypal || null
             });
             newUser.save(function (err) {
                 if (err) res.send(err);
@@ -255,6 +256,7 @@ router.post('/edit_profile', function (req, res) {
             user.lastName = req.body.lastName || user.lastName;
             user.number = req.body.number || user.number;
             user.gender = req.body.gender || user.gender;
+            user.payment.paypal = req.body.paypal || user.payment.paypal;
             user.save(function (err) {
                 if (err) res.send(err);
             });

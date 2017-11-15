@@ -478,7 +478,7 @@ router.get('/get_offering_orders', function (req, res) {
 
 router.get('/get_applied_orders', function (req, res) {
     Ride.find({'applications.userID': req.decoded.id})
-        .populate('driver', 'firstName lastName score number vehiclePlate')
+        .populate('driver', 'firstName lastName score number vehiclePlate payment')
         .sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
         for (var i = 0; i < results.length; i++) {
@@ -501,7 +501,7 @@ router.get('/get_pending_applications', function (req, res) {
                 accepted: null
             }
         }
-    }).populate('driver', 'firstName lastName score number vehiclePlate').sort('-postDate').exec(function (err, results) {
+    }).populate('driver', 'firstName lastName score number vehiclePlate payment').sort('-postDate').exec(function (err, results) {
         if (err) return res.json({'success': false, 'code': error.db_error});
         for (var i = 0; i < results.length; i++) {
             for (var j = 0; j < results[i].applications.length; j++) {

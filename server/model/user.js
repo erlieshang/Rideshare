@@ -16,6 +16,11 @@ var userSchema = new Schema({
     email: {type: String, lowercase: true, required: true, unique: true},
     number: String,
     avatar: Schema.Types.ObjectId,
+    payment: {
+        paypal: {type: String, default: null},
+        wechat: Schema.Types.ObjectId,
+        alipay: Schema.Types.ObjectId
+    },
     admin: {type: Boolean, default: false},
     password: {type: String, required: true},
     score: {type: Number, default: 10},
@@ -23,9 +28,9 @@ var userSchema = new Schema({
     verifyCode: Number,
     gender: Boolean, //true for male, false for female
     driverPermission: {type: Boolean, default: false},
-    driversLicense: {type: String, default: ''},
+    driversLicense: {type: String, default: null},
     notifications: [Number],
-    vehiclePlate: {type: String, default: ''},
+    vehiclePlate: {type: String, default: null},
     comments: [commentSchema]
     }, {
         runSettersOnQuery: true
