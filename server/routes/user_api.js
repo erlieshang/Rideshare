@@ -265,7 +265,7 @@ router.post('/edit_profile', function (req, res) {
 router.post('/update_email', function (req, res) {
     User.findById(req.decoded.id, function (err, user) {
         if (err) res.json(err);
-        else if (!req.body.email)
+        else if (!req.body.email || !email_reg.test(req.body.email))
             res.json({
                 'success': false,
                 'code': error.key_information_missing
