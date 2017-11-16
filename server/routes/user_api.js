@@ -482,8 +482,11 @@ router.get('/get_notifications', function (req, res) {
 
 router.get("/info", function (req, res) {
     User.findById(req.decoded.id, function (err, user) {
-        if (err) throw err;
-        res.json(user);
+        if (err) return res.json({'code': error.db_error});
+        if (user)
+            return res.json({'code': error.no_error, 'data': user});
+        else
+            return res.json({'code': error.user_not_found})
     });
 });
 
