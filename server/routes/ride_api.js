@@ -9,6 +9,8 @@ var ride_valid = require('./ride_valild');
 var notification = require('./notification');
 var User = require("../model/user");
 var Ride = require('../model/ride');
+var crawler = require('../crawler/Rideshare_Crawler');
+var get_city = require('./get_city');
 
 var router = express.Router();
 var transporter = config.transporter;
@@ -45,6 +47,9 @@ router.post('/search_ride', function (req, res) {
                 } else {
                     pick_up.lat = response.body.results[0].geometry.location.lat;
                     pick_up.lng = response.body.results[0].geometry.location.lng;
+                    var start = null;
+                    if (req.body.crawler)
+                        start = get_city(response.body.results[0].address_components);
                     unirest.get(config.map_url)
                         .query({'address': req.body.dropOffLoc})
                         .query({'key': config.map_key})
@@ -54,6 +59,9 @@ router.post('/search_ride', function (req, res) {
                             } else {
                                 drop_off.lat = response.body.results[0].geometry.location.lat;
                                 drop_off.lng = response.body.results[0].geometry.location.lng;
+                                var end = null;
+                                if (req.body.crawler)
+                                    end = get_city(response.body.results[0].address_components);
                                 for (var i = 0; i < results.length; i++) {
                                     var dx_p = results[i].pickUpLoc.lat - pick_up.lat;
                                     var dy_p = results[i].pickUpLoc.lng - pick_up.lng;
@@ -64,7 +72,23 @@ router.post('/search_ride', function (req, res) {
                                     if (pick && drop)
                                         ret_ride.push(results[i]);
                                 }
-                                return res.json({'success': true, 'code': error.no_error, 'data': ret_ride});
+                                if (start == null || end == null)
+                                    return res.json({'success': true, 'code': error.no_error, 'data': ret_ride});
+                                else {
+                                    var options = {
+                                        'start_city': start,
+                                        'end_city': end,
+                                        'kijiji': req.body.crawler.kijiji || false,
+                                        'craigslist': req.body.crawler.craigslist || false
+                                    };
+                                    var external_data = crawler(options);
+                                    return res.json({
+                                        'success': true,
+                                        'code': error.no_error,
+                                        'data': ret_ride,
+                                        'external_data': external_data
+                                    });
+                                }
                             }
                         });
                 }
