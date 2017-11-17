@@ -392,7 +392,7 @@ router.get('/get_wechat', function (req, res) {
 
 router.post('/edit_profile', function (req, res) {
     User.findById(req.decoded.id, function (err, user) {
-        if (err) res.json(err);
+        if (err) return res.json({'code': error.db_error, 'info': err});
         else {
             user.firstName = req.body.firstName || user.firstName;
             user.lastName = req.body.lastName || user.lastName;
@@ -400,7 +400,8 @@ router.post('/edit_profile', function (req, res) {
             user.gender = req.body.gender || user.gender;
             user.payment.paypal = req.body.paypal || user.payment.paypal;
             user.save(function (err) {
-                if (err) res.send(err);
+                if (err) return res.json({'code': error.db_error, 'info': err});
+                else return res.json({'code': error.no_error});
             });
         }
     });
