@@ -10,7 +10,7 @@ module.exports = {
         service: 'gmail',
         auth: {
             user: 'noreply.rideshare@gmail.com',
-            pass: 'rideshare123'
+            pass: 'RideshareWaterloo'
         }
     }),
     'email_content': {

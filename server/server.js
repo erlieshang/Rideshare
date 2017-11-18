@@ -7,6 +7,7 @@ var scheduler = require('node-schedule');
 var index = require("./routes/index");
 var user_api = require('./routes/user_api');
 var ride_api = require('./routes/ride_api');
+var chat_api = require('./routes/chat_api');
 var config = require('./config');
 var updateScore = require('./update_score');
 
@@ -33,6 +34,7 @@ app.use(morgan('dev'));
 app.use("/", index);
 app.use("/users", user_api);
 app.use("/rides", ride_api);
+app.use("/chat", chat_api);
 
 //scheduled job
 scheduler.scheduleJob('1 * * * * *', updateScore);
