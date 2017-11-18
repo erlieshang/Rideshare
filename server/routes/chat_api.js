@@ -5,7 +5,7 @@ var config = require("../config");
 var error = require('../error');
 var auth = require('./authenticate');
 var User = require("../model/user");
-var Msg = require('../model/message');
+var Conv = require('../model/conversation');
 
 var router = express.Router();
 
@@ -44,5 +44,9 @@ router.get('/check', function (req, res) {
                 return res.json({code: error.no_error, info: true});
         });
 });
+
+router.get('/get_all', function (req, res) {
+
+})
 
 module.exports = router;
