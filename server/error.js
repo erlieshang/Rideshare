@@ -28,5 +28,6 @@ module.exports = {
     'no_notifications': 26,
     'new_notifications': 27,
     'user_existed': 28,
-    'map_error': 29
+    'map_error': 29,
+    'send_msg_to_yourself': 30
 };

@@ -20,21 +20,42 @@ router.use(auth);
 router.post('/send', function (req, res) {
     if (!req.body.to || !req.body.text)
         return res.json({'success': false, 'code': error.key_information_missing});
-    var newMsg = new Msg({
-        from: req.decoded.id,
-        to: req.body.to,
-        text: req.body.text
-    });
-    newMsg.save(function (err) {
-        if (err)
-            return res.json({code: error.db_error, info: err});
-        else
-            return res.json({code: error.no_error});
-    });
+    if (req.decoded.id == req.body.to)
+        return res.json({'success': false, 'code': error.send_msg_to_yourself});
+    Conv.findOne({$or: [{user1: req.body.to, user2: req.decoded.id}, {user2: req.body.to, user1: req.decoded.id}]})
+        .exec(function (err, result) {
+            if (err) return res.json({'code': error.db_error, 'info': err});
+            if (result == null) {
+                var newConv = new Conv({
+                    user1: req.decoded.id,
+                    user2: req.body.to
+                });
+                newConv.messages.push({
+                    from: req.decoded.id,
+                    to: req.body.to,
+                    text: req.body.text
+                });
+                newConv.save(function (err) {
+                    if (err) return res.json({'code': error.db_error, 'info': err});
+                    return res.json({'code': error.no_error});
+                });
+            }
+            else {
+                result.messages.push({
+                    from: req.decoded.id,
+                    to: req.body.to,
+                    text: req.body.text
+                });
+                result.save(function (err) {
+                    if (err) return res.json({'code': error.db_error, 'info': err});
+                    return res.json({'code': error.no_error});
+                });
+            }
+        });
 });
 
 router.get('/check', function (req, res) {
-    Msg.find({to: req.decoded.id, sent: false})
+    Conv.find({$or: [{user1: req.decoded.id}, {user2: req.decoded.id}]})
         .exec(function (err, results) {
             if (err)
                 return res.json({code: error.db_error, info: err});
@@ -44,9 +65,5 @@ router.get('/check', function (req, res) {
                 return res.json({code: error.no_error, info: true});
         });
 });
-
-router.get('/get_all', function (req, res) {
-
-})
 
 module.exports = router;
