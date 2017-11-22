@@ -17,6 +17,18 @@ router.post('/test', function (req, res) {
 
 router.use(auth);
 
+router.get('/chat_list', function (req, res) {
+    Conv.find({$or: [{user1: req.decoded.id}, {user2: req.decoded.id}]})
+        .select({user1: 1, user2: 1, creationDate: 1, messages:{$slice: -1}})
+        .populate('user1', 'firstName lastName')
+        .populate('user2', 'firstName lastName')
+        .exec(function (err, results) {
+            if (err)
+                return res.json({code: error.db_error, info: err});
+            return res.json({code: error.no_error, data: results});
+        });
+});
+
 router.post('/send', function (req, res) {
     if (!req.body.to || !req.body.text)
         return res.json({'success': false, 'code': error.key_information_missing});
