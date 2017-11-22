@@ -19,13 +19,22 @@ router.use(auth);
 
 router.get('/chat_list', function (req, res) {
     Conv.find({$or: [{user1: req.decoded.id}, {user2: req.decoded.id}]})
-        .select({user1: 1, user2: 1, creationDate: 1, messages:{$slice: -1}})
+        .select({user1: 1, user2: 1, createdAt: 1, messages:{$slice: -1}})
         .populate('user1', 'firstName lastName')
         .populate('user2', 'firstName lastName')
         .exec(function (err, results) {
             if (err)
                 return res.json({code: error.db_error, info: err});
-            return res.json({code: error.no_error, data: results});
+            var formatted = [];
+            for (var i = 0; i < results.length; i++) {
+                var tmp = {createdAt: results[i].createdAt, messages:results[i].messages};
+                if (results[i].user1.id == req.decoded.id)
+                    tmp['user'] = results[i].user2;
+                else
+                    tmp['user'] = results[i].user1;
+                formatted.push(tmp);
+            }
+            return res.json({code: error.no_error, data: formatted});
         });
 });
 
