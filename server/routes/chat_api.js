@@ -27,7 +27,7 @@ router.get('/chat_list', function (req, res) {
                 return res.json({code: error.db_error, info: err});
             var formatted = [];
             for (var i = 0; i < results.length; i++) {
-                var tmp = {createdAt: results[i].createdAt, messages:results[i].messages};
+                var tmp = {createdAt: results[i].createdAt, messages:results[i].messages[0]};
                 if (results[i].user1.id == req.decoded.id)
                     tmp['user'] = results[i].user2;
                 else
@@ -72,6 +72,35 @@ router.post('/send', function (req, res) {
                     return res.json({'code': error.no_error});
                 });
             }
+        });
+});
+
+router.post('/get_history', function (req, res) {
+    if (!req.body.user)
+        return res.json({'success': false, 'code': error.key_information_missing});
+    if (req.decoded.id == req.body.user)
+        return res.json({'success': false, 'code': error.send_msg_to_yourself});
+    Conv.findOne({$or: [{user1: req.body.user, user2: req.decoded.id}, {user2: req.body.user, user1: req.decoded.id}]})
+        .populate('messages.from', 'firstName lastName')
+        .exec(function (err, result) {
+            if (err) return res.json({code: error.db_error, info: err});
+            if (result == null)
+                return res.json([]);
+            var ret = [];
+            for (var i = result.messages.length - 1; i >= 0; i--) {
+                var tmp_user = {
+                    _id: result.messages[i].from.id,
+                    name: result.messages[i].from.firstName + ' ' + result.messages[i].from.lastName
+                };
+                var tmp = {
+                    createdAt: result.messages[i].createdAt,
+                    text: result.messages[i].text,
+                    _id: result.messages[i].id,
+                    user: tmp_user
+                };
+                ret.push(tmp);
+            }
+            return res.json(ret);
         });
 });
 
