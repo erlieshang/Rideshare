@@ -4,43 +4,43 @@
 var request = require('request');
 var cheerio = require('cheerio');
 var URL = require('url-parse');
+
+
 var Datastore = require('nedb');
+var link_array = [];
+var MAX_PAGES_TO_VISIT = 10;
+var MAX_SEARCH_WORDS = 2;
+var pagesVisited = {};
+var numPagesVisited = 0;
+var pagesToVisit = [];
+var START_URL = "https://toronto.craigslist.ca/search/rid";
 
+var url = new URL(START_URL);
+var baseUrl = url.protocol + "//" + url.hostname;
+var word_num = 0;
+var initialized = false;
 var db = new Datastore({ filename: 'frequent.db', autoload: true});
+var found = false;
 
+var SEARCH_WORD = [];
 
-module.exports = function crawler(options) {
+var options;
 
+module.exports = function crawler(option_input) {
+
+//function crawler(options) 
+
+options = option_input;
 
 var origin = options.start_city;
 var destination = options.end_city;
 var kijiji = options.kijiji;
 var craigslist = options.craigslist; 
+SEARCH_WORD = [origin,destination];
 
-var link_array = [];
+if (initialized == false)
 
-
-
-
-//var craigslist url
-
-//var SEARCH_WORD = "ride share";
-var MAX_PAGES_TO_VISIT = 10;
-var MAX_SEARCH_WORDS = 2;
-
-
-var pagesVisited = {};
-var numPagesVisited = 0;
-var pagesToVisit = [];
-var url = new URL(START_URL);
-var baseUrl = url.protocol + "//" + url.hostname;
-
-
-var SEARCH_WORD = [origin,destination];
-var word_num = 0;
-
-
-
+{
 
 
 if (craigslist == false)
@@ -52,7 +52,9 @@ var START_URL = "https://www.kijiji.ca/b-travel-vacations/kitchener-waterloo/c30
 pagesToVisit.push(START_URL);
 console.log("RideShare Kijiji Cawler");
 
-crawl();
+initialized = true;
+
+crawler(options);
 
 }
 
@@ -60,22 +62,34 @@ else if (kijiji == false)
 
 {
 
-var START_URL = "https://toronto.craigslist.ca/search/rid"
+var START_URL = "https://toronto.craigslist.ca/search/rid";
 
 pagesToVisit.push(START_URL);
 console.log("RideShare craigslist Cawler");
 
-crawl();
+initialized = true;
+
+crawler(options);
 
 }
 
 
+}
 
+else
 
-
-function crawl()
 {
-  if(numPagesVisited >= MAX_PAGES_TO_VISIT)
+
+
+if(found)
+  {
+    console.log("Success!");
+    console.log(link_array);
+
+    return link_array;
+  }
+
+if(numPagesVisited >= MAX_PAGES_TO_VISIT)
   {
     console.log("Visited max number of pages");
     return;
@@ -83,18 +97,24 @@ function crawl()
 
   var nextPage = pagesToVisit.pop();
 
+
   if (nextPage in pagesVisited)
   {
     // Crawl again if page already visited
-    crawl();
+    crawler(options);
   }
 
   else
   {
     // Visit the new page
-    visitPage(nextPage, crawl);
+    visitPage(nextPage, crawler);
   }
+
+ }
+
 }
+
+
 
 
 function visitPage(url, callback)
@@ -113,7 +133,7 @@ function visitPage(url, callback)
      if(response.statusCode !== 200)
 
      {
-       callback();
+       callback(options);
        return;
      }
 
@@ -133,17 +153,26 @@ function visitPage(url, callback)
        };
 
 
-      db.insert(city_info, function(err,doc) {
+          
+      if (word_num>0)
+
+       {
+
+        db.insert(city_info, function(err,doc) {
 
 
        console.log('Inserted', city_info.name);
 
 
         });
-
           
           link_array.push(city_info.name); 
           link_array.push(city_info.link);
+          found = true;
+          callback(options);
+
+       }
+
 
          // console.log(link_array);
 
@@ -158,19 +187,25 @@ function visitPage(url, callback)
 
           pagesVisited ={};
           pagesToVisit.push(START_URL);
-          callback();
+          callback(options);
         }
 
      }
      else
      {
        collectInternalLinks($);
-       // Callback is crawl()
-       callback();
+       // Callback is crawler()
+       callback(options);
      }
 
   });
 }
+
+
+
+
+
+
 
 function searchForWord($, word)
 
@@ -178,6 +213,12 @@ function searchForWord($, word)
   var bodyText = $('html > body').text().toLowerCase();
   return(bodyText.indexOf(word.toLowerCase()) !== -1);
 }
+
+
+
+
+
+
 
 function collectInternalLinks($)
 
@@ -194,5 +235,4 @@ function collectInternalLinks($)
 
 }
 
-  return link_array;
-};
+
