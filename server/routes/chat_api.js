@@ -132,7 +132,7 @@ router.post('/check_conv', function (req, res) {
                 return res.json([]);
             var ret = [];
             for (var i = result.messages.length - 1; i >= 0; i--) {
-                if (result.messages[i].to != req.decoded.id && !result.messages[i].sent) {
+                if (result.messages[i].to == req.decoded.id && !result.messages[i].sent) {
                     result.messages[i].sent = true;
                     var tmp_user = {
                         _id: result.messages[i].from.id,
