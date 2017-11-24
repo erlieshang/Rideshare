@@ -17,7 +17,7 @@ var url;
 var baseUrl;
 var START_URL;
 var num = 2;
-
+var options;
 
 var word_num = 0;
 var initialized = false;
@@ -26,12 +26,12 @@ var found = false;
 
 var SEARCH_WORD = [] ;
 
- //var options = {
-                                      // 'start_city': "Toronto",
+// var options = {
+                                     //  'start_city': "Toronto",
                                      //  'end_city': "Waterloo",
                                      //   'kijiji': false ,
-                                      // 'craigslist': true
-                                  // };;
+                                     //  'craigslist': true
+                                //  };;
 
 //crawler(options);
 
