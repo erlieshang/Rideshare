@@ -152,48 +152,51 @@ router.post('/check_conv', function (req, res) {
                         return res.json({code: error.no_error, data: [], unread: total_unread});
                     });
             }
-            var ret = [];
-            for (var i = result.messages.length - 1; i >= 0; i--) {
-                if (result.messages[i].to == req.decoded.id && !result.messages[i].sent) {
-                    result.messages[i].sent = true;
-                    var tmp_user = {
-                        _id: result.messages[i].from.id,
-                        name: result.messages[i].from.firstName + ' ' + result.messages[i].from.lastName
-                    };
-                    var tmp = {
-                        createdAt: result.messages[i].createdAt,
-                        text: result.messages[i].text,
-                        _id: result.messages[i].id,
-                        user: tmp_user
-                    };
-                    ret.push(tmp);
+            else {
+                var ret = [];
+                for (var i = result.messages.length - 1; i >= 0; i--) {
+                    if (result.messages[i].to == req.decoded.id && !result.messages[i].sent) {
+                        result.messages[i].sent = true;
+                        var tmp_user = {
+                            _id: result.messages[i].from.id,
+                            name: result.messages[i].from.firstName + ' ' + result.messages[i].from.lastName
+                        };
+                        var tmp = {
+                            createdAt: result.messages[i].createdAt,
+                            text: result.messages[i].text,
+                            _id: result.messages[i].id,
+                            user: tmp_user
+                        };
+                        ret.push(tmp);
+                    }
                 }
-            }
-            result.save(function (err) {
-                if (err) return res.json({code: error.db_error, info: err});
-                Conv.find({$or: [{user1: req.decoded.id}, {user2: req.decoded.id}]})
-                    .exec(function (err, results) {
-                        if (err)
-                            return res.json({code: error.db_error, info: err});
-                        var total_unread = 0;
-                        for (var i = 0; i < results.length; i++) {
-                            if (results[i].user1 != req.body.user && results[i].user2 != req.body.user) {
-                                var unread = 0;
-                                for (var j = results[i].messages.length - 1; j >= 0; j--) {
-                                    if (results[i].messages[j].to == req.decoded.id) {
-                                        if (results[i].messages[j].sent)
-                                            break;
-                                        else
-                                            unread += 1;
+                result.save(function (err) {
+                    if (err) return res.json({code: error.db_error, info: err});
+                    Conv.find({$or: [{user1: req.decoded.id}, {user2: req.decoded.id}]})
+                        .exec(function (err, results) {
+                            if (err)
+                                return res.json({code: error.db_error, info: err});
+                            var total_unread = 0;
+                            for (var i = 0; i < results.length; i++) {
+                                if (results[i].user1 != req.body.user && results[i].user2 != req.body.user) {
+                                    var unread = 0;
+                                    for (var j = results[i].messages.length - 1; j >= 0; j--) {
+                                        if (results[i].messages[j].to == req.decoded.id) {
+                                            if (results[i].messages[j].sent)
+                                                break;
+                                            else
+                                                unread += 1;
+                                        }
                                     }
+                                    total_unread += unread;
                                 }
-                                total_unread += unread;
                             }
-                        }
-                        return res.json({code: error.no_error, data: ret, unread: total_unread});
-                    });
-            });
+                            return res.json({code: error.no_error, data: ret, unread: total_unread});
+                        });
+                });
+            }
         });
+
 });
 
 module.exports = router;
