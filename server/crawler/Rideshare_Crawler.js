@@ -13,10 +13,12 @@ var MAX_SEARCH_WORDS = 2;
 var pagesVisited = {};
 var numPagesVisited = 0;
 var pagesToVisit = [];
-var START_URL = "https://toronto.craigslist.ca/search/rid";
+var url;
+var baseUrl;
+var START_URL;
+//var START_URL = "https://toronto.craigslist.ca/search/rid";
 
-var url = new URL(START_URL);
-var baseUrl = url.protocol + "//" + url.hostname;
+
 var word_num = 0;
 var initialized = false;
 var db = new Datastore({ filename: 'frequent.db', autoload: true});
@@ -24,9 +26,16 @@ var found = false;
 
 var SEARCH_WORD = [];
 
-var options;
+ var options = {
+                                        'start_city': "Toronto",
+                                        'end_city': "Waterloo",
+                                        'kijiji': true ,
+                                        'craigslist': false
+                                    };;
 
-module.exports = function crawler(option_input) {
+crawler(options);
+
+function crawler(option_input) {
 
 //function crawler(options) 
 
@@ -47,10 +56,13 @@ if (craigslist == false)
 
 {
 
-var START_URL = "https://www.kijiji.ca/b-travel-vacations/kitchener-waterloo/c302l1700212";
+ START_URL = "https://www.kijiji.ca/b-travel-vacations/kitchener-waterloo/c302l1700212";
 
 pagesToVisit.push(START_URL);
 console.log("RideShare Kijiji Cawler");
+
+var url = new URL(START_URL);
+var baseUrl = url.protocol + "//" + url.hostname;
 
 initialized = true;
 
@@ -62,10 +74,13 @@ else if (kijiji == false)
 
 {
 
-var START_URL = "https://toronto.craigslist.ca/search/rid";
+START_URL = "https://toronto.craigslist.ca/search/rid";
 
 pagesToVisit.push(START_URL);
 console.log("RideShare craigslist Cawler");
+
+var url = new URL(START_URL);
+var baseUrl = url.protocol + "//" + url.hostname;
 
 initialized = true;
 
