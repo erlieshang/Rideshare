@@ -16,7 +16,7 @@ var pagesToVisit = [];
 var url;
 var baseUrl;
 var START_URL;
-//var START_URL = "https://toronto.craigslist.ca/search/rid";
+var num = 2;
 
 
 var word_num = 0;
@@ -24,20 +24,20 @@ var initialized = false;
 var db = new Datastore({ filename: 'frequent.db', autoload: true});
 var found = false;
 
-var SEARCH_WORD = [];
+var SEARCH_WORD = [] ;
 
  //var options = {
-                             //           'start_city': "Toronto",
-                           //             'end_city': "Waterloo",
-                         //               'kijiji': true ,
-                    ///                    'craigslist': true
-                       //             };;
+                                      // 'start_city': "Toronto",
+                                     //  'end_city': "Waterloo",
+                                     //   'kijiji': false ,
+                                      // 'craigslist': true
+                                  // };;
 
 //crawler(options);
 
 //function crawler(option_input) {
 
-module.exports = function crawler(options) {
+module.exports = function crawler(option_input) {
 
 options = option_input;
 
@@ -45,7 +45,8 @@ var origin = options.start_city;
 var destination = options.end_city;
 var kijiji = options.kijiji;
 var craigslist = options.craigslist; 
-SEARCH_WORD = [origin,destination];
+SEARCH_WORD = [origin+" to "+destination,"rideshare "+origin+" to "+destination] ;
+
 
 if (initialized == false)
 
@@ -56,7 +57,11 @@ if (craigslist == false)
 
 {
 
- START_URL = "https://www.kijiji.ca/b-travel-vacations/kitchener-waterloo/c302l1700212";
+ //START_URL = "https://www.kijiji.ca/b-travel-vacations/kitchener-waterloo/c302l1700212";
+
+ START_URL = "https://www.kijiji.ca/b-ontario/"+origin+"-to-"+destination+"/k0l9004?dc=true"
+
+ //START_URL = "https://www.kijiji.ca/b-ontario/l9004?dc=true";
 
 pagesToVisit.push(START_URL);
 console.log("RideShare Kijiji Cawler");
@@ -74,7 +79,7 @@ else if (kijiji == false)
 
 {
 
-START_URL = "https://toronto.craigslist.ca/search/rid";
+START_URL = "https://toronto.craigslist.ca/search/rid?query="+origin+"+to+"+destination;
 
 pagesToVisit.push(START_URL);
 console.log("RideShare craigslist Cawler");
@@ -107,7 +112,9 @@ if(found)
 if(numPagesVisited >= MAX_PAGES_TO_VISIT)
   {
     console.log("Visited max number of pages");
-    return;
+    link_array.push(START_URL);
+     console.log(link_array);
+    return link_array;
   }
 
   var nextPage = pagesToVisit.pop();
@@ -169,9 +176,9 @@ function visitPage(url, callback)
 
 
           
-      if (word_num>0)
+      //if (word_num>0)
 
-       {
+      // {
 
         db.insert(city_info, function(err,doc) {
 
@@ -187,16 +194,19 @@ function visitPage(url, callback)
           var relativeLinks = $("a[href^='/']");
           console.log("Found " + relativeLinks.length + " relative links on page");
 
-         relativeLinks.each(function()
+          var slice_links = relativeLinks.slice(20,30)
+
+         slice_links.each(function()
           {
          link_array.push(baseUrl + $(this).attr('href'));
           });
 
 
+
           found = true;
           callback(options);
 
-       }
+       //}
 
 
          // console.log(link_array);
