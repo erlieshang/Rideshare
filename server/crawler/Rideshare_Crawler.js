@@ -26,18 +26,18 @@ var found = false;
 
 var SEARCH_WORD = [];
 
- var options = {
-                                        'start_city': "Toronto",
-                                        'end_city': "Waterloo",
-                                        'kijiji': true ,
-                                        'craigslist': false
-                                    };;
+ //var options = {
+                             //           'start_city': "Toronto",
+                           //             'end_city': "Waterloo",
+                         //               'kijiji': true ,
+                    ///                    'craigslist': true
+                       //             };;
 
-crawler(options);
+//crawler(options);
 
-function crawler(option_input) {
+//function crawler(option_input) {
 
-//function crawler(options) 
+module.exports = function crawler(options) {
 
 options = option_input;
 
@@ -61,8 +61,8 @@ if (craigslist == false)
 pagesToVisit.push(START_URL);
 console.log("RideShare Kijiji Cawler");
 
-var url = new URL(START_URL);
-var baseUrl = url.protocol + "//" + url.hostname;
+url = new URL(START_URL);
+ baseUrl = url.protocol + "//" + url.hostname;
 
 initialized = true;
 
@@ -79,8 +79,8 @@ START_URL = "https://toronto.craigslist.ca/search/rid";
 pagesToVisit.push(START_URL);
 console.log("RideShare craigslist Cawler");
 
-var url = new URL(START_URL);
-var baseUrl = url.protocol + "//" + url.hostname;
+ url = new URL(START_URL);
+ baseUrl = url.protocol + "//" + url.hostname;
 
 initialized = true;
 
@@ -181,8 +181,18 @@ function visitPage(url, callback)
 
         });
           
-          link_array.push(city_info.name); 
+          //link_array.push(city_info.name); 
           link_array.push(city_info.link);
+
+          var relativeLinks = $("a[href^='/']");
+          console.log("Found " + relativeLinks.length + " relative links on page");
+
+         relativeLinks.each(function()
+          {
+         link_array.push(baseUrl + $(this).attr('href'));
+          });
+
+
           found = true;
           callback(options);
 
@@ -202,6 +212,8 @@ function visitPage(url, callback)
 
           pagesVisited ={};
           pagesToVisit.push(START_URL);
+
+
           callback(options);
         }
 
