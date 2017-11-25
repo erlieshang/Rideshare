@@ -4,10 +4,13 @@
 var request = require('request');
 var cheerio = require('cheerio');
 var URL = require('url-parse');
+var async = require('asyncawait/async');
+var await = require('asyncawait/await');
 
 
 var Datastore = require('nedb');
 var link_array = [];
+var return_array = [];
 var MAX_PAGES_TO_VISIT = 10;
 var MAX_SEARCH_WORDS = 2;
 var pagesVisited = {};
@@ -17,40 +20,58 @@ var url;
 var baseUrl;
 var START_URL;
 var num = 2;
-var options;
+
 
 var word_num = 0;
 var initialized = false;
 var db = new Datastore({ filename: 'frequent.db', autoload: true});
 var found = false;
+var kijiji;
+var craigslist;
 
 var SEARCH_WORD = [] ;
 
-// var options = {
-                                     //  'start_city': "Toronto",
-                                     //  'end_city': "Waterloo",
-                                     //   'kijiji': false ,
-                                     //  'craigslist': true
-                                //  };;
+var options;
 
-//crawler(options);
+//hello();
 
-//function crawler(option_input) {
+//async function hello()
 
-module.exports = function crawler(option_input) {
+
+//{
+
+/*option = {
+                                       'start_city': "waterloo",
+                                       'end_city': "toronto",
+                                      'kijiji': true ,
+                                       'craigslist': false
+                                  };;
+
+
+var damn = await crawler(option);
+
+
+console.log (damn);
+
+}*/
+
+
+module.exports =  async function crawler(option_input)
+
+
+//async function crawler (option_input)
+{
+
+
 
 options = option_input;
 
 var origin = options.start_city;
 var destination = options.end_city;
-var kijiji = options.kijiji;
-var craigslist = options.craigslist; 
+kijiji = options.kijiji;
+craigslist = options.craigslist; 
 SEARCH_WORD = [origin+" to "+destination,"rideshare "+origin+" to "+destination] ;
 
-
-if (initialized == false)
-
-{
 
 
 if (craigslist == false)
@@ -59,9 +80,7 @@ if (craigslist == false)
 
  //START_URL = "https://www.kijiji.ca/b-travel-vacations/kitchener-waterloo/c302l1700212";
 
- START_URL = "https://www.kijiji.ca/b-ontario/"+origin+"-to-"+destination+"/k0l9004?dc=true"
-
- //START_URL = "https://www.kijiji.ca/b-ontario/l9004?dc=true";
+START_URL = "https://www.kijiji.ca/b-ontario/"+origin+"-to-"+destination+"/k0l9004?dc=true"
 
 pagesToVisit.push(START_URL);
 console.log("RideShare Kijiji Cawler");
@@ -71,7 +90,7 @@ url = new URL(START_URL);
 
 initialized = true;
 
-crawler(options);
+return_array = await crawl(options);
 
 }
 
@@ -82,21 +101,29 @@ else if (kijiji == false)
 START_URL = "https://toronto.craigslist.ca/search/rid?query="+origin+"+to+"+destination;
 
 pagesToVisit.push(START_URL);
-console.log("RideShare craigslist Cawler");
+console.log("RideShare Craigslist Cawler");
 
  url = new URL(START_URL);
  baseUrl = url.protocol + "//" + url.hostname;
 
 initialized = true;
 
-crawler(options);
+return_array = await crawl(options);
+
+
+
+}
+
+return link_array;
 
 }
 
 
-}
 
-else
+
+
+
+async function crawl(option_input)
 
 {
 
@@ -104,8 +131,7 @@ else
 if(found)
   {
     console.log("Success!");
-    console.log(link_array);
-
+   // console.log(link_array);
     return link_array;
   }
 
@@ -113,34 +139,29 @@ if(numPagesVisited >= MAX_PAGES_TO_VISIT)
   {
     console.log("Visited max number of pages");
     link_array.push(START_URL);
-     console.log(link_array);
+    // console.log(link_array);
+
     return link_array;
   }
 
+
   var nextPage = pagesToVisit.pop();
 
+ return_array =  await visitpage(nextPage,crawl);
+ return return_array;
 
-  if (nextPage in pagesVisited)
-  {
-    // Crawl again if page already visited
-    crawler(options);
-  }
-
-  else
-  {
-    // Visit the new page
-    visitPage(nextPage, crawler);
-  }
+  pagesVisited[nextPage] = true;
+  numPagesVisited++;
+  
 
  }
 
-}
 
 
+ function visitpage(url,callback) {
 
+return new Promise(function (resolve, reject) {
 
-function visitPage(url, callback)
-{
   // Add page and increment num visited
   pagesVisited[url] = true;
   numPagesVisited++;
@@ -150,15 +171,10 @@ function visitPage(url, callback)
   request(url, function(error, response, body)
 
   {
+
+    if (!error && response.statusCode == 200) {
      // Retrieve status code: HTTP OK is 200
-     console.log("Status code: " + response.statusCode);
-     if(response.statusCode !== 200)
-
-     {
-       callback(options);
-       return;
-     }
-
+    // console.log("Status code: " + response.statusCode);
      // Document Body is parsed here
 
      var $ = cheerio.load(body);
@@ -166,7 +182,7 @@ function visitPage(url, callback)
 
      if(isWordFound)
      {
-       console.log('Word ' + SEARCH_WORD[word_num] + ' found at page ' + url);
+      // console.log('Word ' + SEARCH_WORD[word_num] + ' found at page ' + url);
 
        var city_info = {
 
@@ -174,16 +190,10 @@ function visitPage(url, callback)
         link: url
        };
 
-
-          
-      //if (word_num>0)
-
-      // {
-
         db.insert(city_info, function(err,doc) {
 
 
-       console.log('Inserted', city_info.name);
+     //  console.log('Inserted', city_info.name);
 
 
         });
@@ -192,50 +202,51 @@ function visitPage(url, callback)
           link_array.push(city_info.link);
 
           var relativeLinks = $("a[href^='/']");
-          console.log("Found " + relativeLinks.length + " relative links on page");
+         // console.log("Found " + relativeLinks.length + " relative links on page");
 
-          var slice_links = relativeLinks.slice(20,30)
+         if (kijiji == true) var slice_links = relativeLinks.slice(45,50);
+        else if (craigslist == true) var slice_links = relativeLinks.slice(10,15);
+
 
          slice_links.each(function()
           {
+
+          
          link_array.push(baseUrl + $(this).attr('href'));
+
+       
           });
 
-
-
           found = true;
-          callback(options);
 
-       //}
-
-
-         // console.log(link_array);
-
-       //Increase array pointer to next word
-
-       word_num++;
-
-       if (word_num < MAX_SEARCH_WORDS)
-
-        {
-          //clear pagesVisited and push start url into array
-
-          pagesVisited ={};
-          pagesToVisit.push(START_URL);
-
-
-          callback(options);
-        }
+         callback(options);
 
      }
+
      else
      {
-       collectInternalLinks($);
-       // Callback is crawler()
-       callback(options);
-     }
+      link_array.push(START_URL);
 
-  });
+       var relativeLinks = $("a[href^='/']");
+     //console.log("Found " + relativeLinks.length + " relative links on page");
+
+     relativeLinks.each(function()
+     {
+         pagesToVisit.push(baseUrl + $(this).attr('href'));
+     });
+
+       // Callback is crawl()
+      callback(options);
+      //crawl(options);
+     }
+resolve(body);
+      } else {
+        reject(error);
+      }  });
+
+
+});
+
 }
 
 
@@ -262,7 +273,7 @@ function collectInternalLinks($)
 {
 
   var relativeLinks = $("a[href^='/']");
-     console.log("Found " + relativeLinks.length + " relative links on page");
+     //console.log("Found " + relativeLinks.length + " relative links on page");
 
      relativeLinks.each(function()
      {
@@ -271,5 +282,7 @@ function collectInternalLinks($)
 
 
 }
+
+
 
 
