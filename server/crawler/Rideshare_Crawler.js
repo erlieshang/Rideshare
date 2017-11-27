@@ -63,6 +63,7 @@ module.exports =  async function crawler(option_input)
 {
 
 
+link_array = [];
 
 options = option_input;
 
