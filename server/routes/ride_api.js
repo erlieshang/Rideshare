@@ -1,6 +1,8 @@
 var express = require("express");
 var mongoose = require("mongoose");
 var unirest = require('unirest');
+var async = require('asyncawait/async');
+var await = require('asyncawait/await');
 
 var config = require("../config");
 var error = require('../error');
@@ -53,7 +55,7 @@ router.post('/search_ride', function (req, res) {
                     unirest.get(config.map_url)
                         .query({'address': req.body.dropOffLoc})
                         .query({'key': config.map_key})
-                        .end(function (response) {
+                        .end(async function (response) {
                             if (response.error) {
                                 return res.json({'code': error.map_error});
                             } else {
@@ -81,7 +83,7 @@ router.post('/search_ride', function (req, res) {
                                         'kijiji': req.body.crawler.kijiji || false,
                                         'craigslist': req.body.crawler.craigslist || false
                                     };
-                                    var external_data = crawler(options);
+                                    var external_data = await crawler(options);
                                     return res.json({
                                         'success': true,
                                         'code': error.no_error,
