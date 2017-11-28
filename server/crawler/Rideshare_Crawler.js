@@ -33,18 +33,25 @@ var SEARCH_WORD = [] ;
 
 var options;
 
-//hello();
+/*hello();
 
-//async function hello()
+async function hello()
 
+{
 
-//{
-
-/*option = {
+option = {
                                        'start_city': "waterloo",
                                        'end_city': "toronto",
                                       'kijiji': true ,
                                        'craigslist': false
+                                  };;
+
+
+                                  option2 = {
+                                       'start_city': "ottawa",
+                                       'end_city': "toronto",
+                                      'kijiji': false ,
+                                       'craigslist': true
                                   };;
 
 
@@ -53,6 +60,10 @@ var damn = await crawler(option);
 
 console.log (damn);
 
+var damn2 = await crawler(option2);
+
+console.log (damn2);
+
 }*/
 
 
@@ -60,8 +71,21 @@ module.exports =  async function crawler(option_input)
 
 
 //async function crawler (option_input)
+
 {
 
+initialized = false;
+
+MAX_PAGES_TO_VISIT = 10;
+MAX_SEARCH_WORDS = 2;
+pagesVisited = {};
+numPagesVisited = 0;
+pagesToVisit = [];
+num = 2;
+found = false;
+
+
+var word_num = 0;
 
 link_array = [];
 
@@ -205,8 +229,8 @@ return new Promise(function (resolve, reject) {
           var relativeLinks = $("a[href^='/']");
          // console.log("Found " + relativeLinks.length + " relative links on page");
 
-         if (kijiji == true) var slice_links = relativeLinks.slice(45,50);
-        else if (craigslist == true) var slice_links = relativeLinks.slice(10,15);
+         if (kijiji == true) var slice_links = relativeLinks.slice(45,47);
+        else if (craigslist == true) var slice_links = relativeLinks.slice(0,1);
 
 
          slice_links.each(function()
@@ -217,6 +241,8 @@ return new Promise(function (resolve, reject) {
 
        
           });
+
+
 
           found = true;
 
@@ -283,7 +309,3 @@ function collectInternalLinks($)
 
 
 }
-
-
-
-
