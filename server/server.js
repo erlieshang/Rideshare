@@ -5,6 +5,7 @@ var morgan = require("morgan");
 var scheduler = require('node-schedule');
 
 var index = require("./routes/index");
+var privacy = require("./routes/privacy");
 var user_api = require('./routes/user_api');
 var ride_api = require('./routes/ride_api');
 var chat_api = require('./routes/chat_api');
@@ -32,6 +33,7 @@ app.use(morgan('dev'));
 //Routes
 
 app.use("/", index);
+app.use("/privacy", privacy);
 app.use("/users", user_api);
 app.use("/rides", ride_api);
 app.use("/chat", chat_api);
