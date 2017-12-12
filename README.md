@@ -1,65 +1,21 @@
-# Rideshare
-A rideshare application for ECE651 project
+# Rideshare Server
+The node server of rideshare application for ECE651 project
 
-User-related API:
+## :arrow_up: How to Setup
 
-All response contain an attribute called "code", which you could get the meaning of each code in error.js
+**Step 1:** git clone this repo
 
-/test is to return what you have passed to it
+**Step 2:** checkout the dev_server branch
 
-/register
-{
-    "firstName": "Bob",
-    "lastName": "Zhu",
-    "email": "eshang@uwaterloo.ca",
-    "number": "2268993866",
-    "password": "secret",
-    "gender": "male" or "female"
-}
+**Step 3:** cd ./server
 
-/verify
-{
-  "email": "uwzhuboyuan@gmail.com",
-  "code": "111111"
-}
+**Step 4:** Install dependencies by using npm install (assuming that you have installed latest version of node.js)
 
-/get_token
 
-{
-  "email": "uwzhuboyuan@gmail.com",
-  "password": "111111"
-}
+## :arrow_forward: How to Run the Server
 
-if succeed, response will contain 'token'
+**Please note: you don't need to run this server on your machine when you test the mobile app because we have deployed this server on heroku and you only need run this server if you want to test the REST api using postman or something.**
 
-***for all the routes below, you should contain "x-access-token": {token} in the header***
-/info (this is get method)
-
-you will get
-{
-    "_id": "59ee4799bd38d40012b17bf9",
-    "firstName": "Bob",
-    "lastName": "Zhu",
-    "email": "uwzhuboyuan@gmail.com",
-    "number": "2268993866",
-    "password": "$2a$10$FLbs6OquBPDTC6A.sFLcsOOTDEIegZaL3QzIFlo4GTUBHGqKT6vq6",
-    "verifyCode": 275919,
-    "gender": true,
-    "__v": 0,
-    "avatar": "59ee818553cca9001284ec17",
-    "comments": [],
-    "vehiclePlate": "",
-    "notifications": [],
-    "driversLicense": "",
-    "driverPermission": false,
-    "verified": true,
-    "score": 10,
-    "admin": false
-}
-
-/upload_avatar
-you should use form-data to upload the picture.
-The form has a key called "avatar", whose value is an image file.
-
-/get_avatar (get method)
-you will get this user's avatar(image)
+1. cd ./server
+2. node server
+3. The server will be running at localhost:3000
